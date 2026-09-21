@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MIX+ DPA | Como o MIX pode potencializar suas vendas</title>
+<meta name="description" content="Atividade em duas etapas: complete o MIX de iogurtes e o MIX Galbani escolhendo os itens incrementais certos. Pontuação por assertividade e tempo, com ranking do evento.">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- ============================ ABERTURA ============================ -->
+<section class="tela ativa" id="tela-abertura">
+  <div class="abertura">
+    <div class="abertura-conteudo">
+      <div class="marca claro g"><span class="mix"><b>MIX</b><i>+</i></span><span class="dpa">DPA</span></div>
+      <h1>Como o MIX pode <em>potencializar suas vendas?</em></h1>
+      <p class="chamada">O básico da gôndola já está montado. O desafio é decidir quais itens incrementais entram nos espaços que sobraram, em duas etapas: iogurtes e Galbani.</p>
+
+      <div class="como-funciona">
+        <div class="como-item"><span>1</span><p>Faça seu cadastro</p></div>
+        <div class="como-item"><span>2</span><p>Participe das duas etapas</p></div>
+        <div class="como-item"><span>3</span><p>Monte seu MIX seguindo as regras</p></div>
+        <div class="como-item"><span>4</span><p>Quem montar a melhor estratégia de MIX vence</p></div>
+      </div>
+
+      <button class="btn" id="btn-comecar">Começar agora</button>
+      <p style="margin-top:20px;font-size:13px;opacity:.85" id="contador-jogadores"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CADASTRO ============================ -->
+<section class="tela" id="tela-cadastro">
+  <header class="topo"><div class="limite">
+    <div class="marca claro p"><span class="mix"><b>MIX</b><i>+</i></span><span class="dpa">DPA</span></div>
+    <span class="evento" id="nome-evento"></span>
+  </div></header>
+
+  <div class="miolo"><div class="limite">
+    <div class="cartao" style="max-width:720px;margin:0 auto">
+      <span class="tarja">Vamos começar</span>
+      <h2 class="titulo">Faça seu cadastro para participar da atividade</h2>
+      <p class="apoio">Os dados montam o ranking do evento e permitem enviar o seu diagnóstico de MIX depois da convenção.</p>
+
+      <form class="formulario" id="form-cadastro" novalidate>
+        <div class="campo largo">
+          <label for="f-nome">Nome completo</label>
+          <input type="text" id="f-nome" autocomplete="name" placeholder="Seu nome e sobrenome">
+          <span class="erro" data-erro="f-nome"></span>
+        </div>
+        <div class="campo">
+          <label for="f-email">E-mail</label>
+          <input type="email" id="f-email" autocomplete="email" placeholder="voce@empresa.com.br">
+          <span class="erro" data-erro="f-email"></span>
+        </div>
+        <div class="campo">
+          <label for="f-empresa">Empresa ou loja</label>
+          <input type="text" id="f-empresa" placeholder="Onde você trabalha">
+          <span class="erro" data-erro="f-empresa"></span>
+        </div>
+        <div class="campo">
+          <label for="f-telefone">Telefone com DDD</label>
+          <input type="tel" id="f-telefone" inputmode="numeric" placeholder="(11) 90000-0000" maxlength="16">
+          <span class="erro" data-erro="f-telefone"></span>
+        </div>
+        <div class="campo">
+          <label for="f-area">Sua área</label>
+          <select id="f-area">
+            <option value="">Selecione</option>
+            <option>Vendas</option>
+            <option>Trade marketing</option>
+            <option>Marketing</option>
+            <option>Distribuidor ou representante</option>
+            <option>Varejo</option>
+            <option>Promotor ou merchandising</option>
+            <option>Outra</option>
+          </select>
+          <span class="erro" data-erro="f-area"></span>
+        </div>
+        <div class="campo largo">
+          <div class="consentimento">
+            <input type="checkbox" id="f-lgpd">
+            <label for="f-lgpd" id="texto-lgpd"></label>
+          </div>
+          <span class="erro" data-erro="f-lgpd"></span>
+        </div>
+        <div class="campo largo">
+          <button type="submit" class="btn azul" id="btn-cadastro">Iniciar</button>
+        </div>
+      </form>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============================ AVISO DE ETAPA ============================ -->
+<section class="tela" id="tela-etapa">
+  <header class="topo"><div class="limite">
+    <div class="marca claro p"><span class="mix"><b>MIX</b><i>+</i></span><span class="dpa">DPA</span></div>
+    <div class="passos-topo" id="passos-topo"></div>
+  </div></header>
+
+  <div class="limite">
+    <div class="etapa-aviso">
+      <div>
+        <div class="numero" id="etapa-numero">1</div>
+        <span class="tarja amarela" id="etapa-marca">Iogurtes</span>
+        <h2 id="etapa-titulo"></h2>
+        <p id="etapa-resumo"></p>
+        <div class="regras" id="etapa-regras"></div>
+        <button class="btn azul" id="btn-abrir-etapa">Abrir a gôndola</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ JOGO ============================ -->
+<section class="tela" id="tela-jogo">
+  <div class="barra"><div class="limite">
+    <div class="medidores">
+      <div class="marca claro p"><span class="mix"><b>MIX</b><i>+</i></span><span class="dpa">DPA</span></div>
+      <div class="medidor"><b id="m-etapa">Etapa 1</b><span id="m-etapa-nome">Iogurtes</span></div>
+      <div class="medidor destaque"><b id="m-espacos">0 / 0</b><span>Espaços a preencher</span></div>
+      <div class="medidor"><b id="m-tempo">00:00</b><span>Tempo de montagem</span></div>
+    </div>
+    <button class="btn pequeno" id="btn-confirmar">Confirmar etapa</button>
+  </div></div>
+
+  <div class="limite">
+    <div class="arena">
+      <div class="planograma">
+        <div class="planograma-cabecalho">
+          <h3 id="plano-titulo">Gôndola</h3>
+          <div class="legenda-plano">
+            <span><i style="background:#DCE6F3;border:1px solid #C6D6EA"></i>80% do faturamento, já positivado</span>
+            <span><i style="background:#EAF2FD;border:1px dashed #2E79D6"></i>Espaço livre</span>
+            <span><i style="background:#FFFDF6;border:1px solid #F5B02A"></i>Sua escolha</span>
+          </div>
+        </div>
+        <div id="prateleiras"></div>
+        <p style="font-size:12px;color:var(--texto-suave);margin:12px 0 0" id="dica-plano">
+          Arraste o produto da lista até um espaço livre, ou toque nele para ocupar o próximo espaço. Toque em um item que você escolheu para devolvê-lo à lista.
+        </p>
+      </div>
+
+      <aside class="catalogo">
+        <h3>Itens incrementais</h3>
+        <p class="dica" id="catalogo-dica"></p>
+        <div class="busca"><input type="search" id="busca" placeholder="Buscar produto"></div>
+        <div class="abas" id="abas"></div>
+        <div class="lista" id="lista"></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ RESULTADO ============================ -->
+<section class="tela" id="tela-resultado">
+  <div class="faixa-resultado"><div class="limite">
+    <div class="marca claro m"><span class="mix"><b>MIX</b><i>+</i></span><span class="dpa">DPA</span></div>
+    <p style="text-transform:uppercase;letter-spacing:.14em;font-size:11.5px;font-weight:700;opacity:.85;margin:16px 0 0" id="res-nome"></p>
+    <div class="placar" id="res-pontos">0<small>/1000</small></div>
+    <div class="nivel" id="res-nivel"></div>
+    <div><div class="posicao-ranking" id="res-posicao"></div></div>
+  </div></div>
+
+  <div class="corpo-resultado"><div class="limite">
+    <div class="blocos" id="res-blocos"></div>
+
+    <div class="grade" id="res-etapas"></div>
+
+    <div class="cartao largo" style="margin-top:18px">
+      <h3>Ranking do evento</h3>
+      <p class="sub" id="res-ranking-sub"></p>
+      <table class="tabela" id="res-ranking"></table>
+    </div>
+
+    <div class="acoes">
+      <button class="btn azul" id="btn-proximo">Próximo participante</button>
+    </div>
+
+    <p class="rodape">
+      Nomes e imagens dos produtos vêm dos sites oficiais: aiogurteria.com.br para o portfólio de iogurtes e galbani.com.br para Galbani.<br>
+      Os pesos de incrementalidade de cada SKU são base de referência da atividade e podem ser trocados pelo dado real em <code>js/dados.js</code>.<br>
+      Experiência criada pela 75 LAB.
+    </p>
+  </div></div>
+</section>
+
+<div class="aviso" id="aviso"></div>
+
+<script src="config.js"></script>
+<script src="js/dados.js"></script>
+<script src="js/etapas.js"></script>
+<script src="js/motor.js"></script>
+<script src="js/store.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
