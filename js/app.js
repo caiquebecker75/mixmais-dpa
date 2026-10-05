@@ -183,7 +183,9 @@
       }
     });
     while (postas < n) { saida.push({ tipo: "livre", cm: pedaco }); postas++; }
-    return saida;
+    estado.slots = saida;
+    normalizarLivres();
+    return estado.slots;
   }
 
   function slotsVagas(e) {
@@ -242,6 +244,29 @@
     : estado.slots.filter(s => s.tipo === "livre").length;
   const faturamentoAtual = () => MOTOR.faturamentoDe(escolhasAtuais(), estado.etapa, estado.formato);
 
+  /* largura fisica de cada prateleira, igual para todas: e ela que mantem a
+     escala do planograma honesta, um produto de 6 cm sempre aparece como 6 cm */
+  function capPrateleira() {
+    const e = estado.etapa;
+    const fmt = FORMATOS.find(f => f.id === estado.formato) || {};
+    const n = fmt.prateleiras || e.prateleiras || 6;
+    return (estado.ctx ? estado.ctx.cmTotal : 732) / n;
+  }
+
+  /* lacuna nunca pode ser maior que uma prateleira, senao a escala quebra */
+  function normalizarLivres() {
+    if (!ehLinear()) return;
+    const cap = capPrateleira();
+    const out = [];
+    estado.slots.forEach(s => {
+      if (s.tipo !== "livre" || s.cm <= cap) { out.push(s); return; }
+      let resto = s.cm;
+      while (resto > cap) { out.push({ tipo: "livre", cm: Math.round(cap) }); resto -= Math.round(cap); }
+      if (resto > 0) out.push({ tipo: "livre", cm: resto });
+    });
+    estado.slots = out;
+  }
+
   function prateleiras() {
     const e = estado.etapa;
     if (!ehLinear()) {
@@ -249,11 +274,7 @@
       for (let i = 0; i < estado.slots.length; i += cols) out.push({ cap: cols, itens: estado.slots.slice(i, i + cols) });
       return out;
     }
-    const fmt = FORMATOS.find(f => f.id === estado.formato) || {};
-    const n = fmt.prateleiras || e.prateleiras || 6;
-    const total = estado.slots.reduce((t, s) => t + (s.cm || 0), 0);
-    const maior = estado.slots.reduce((m, s) => Math.max(m, s.cm || 0), 0);
-    const cap = Math.max(total / n, maior) * 1.02;
+    const cap = capPrateleira();
     const out = []; let atual = [], soma = 0;
     estado.slots.forEach(s => {
       const cm = s.cm || 0;
@@ -276,10 +297,11 @@
         }
         const s = skuPorId(slot.id);
         const fr = slot.frentes || 1;
-        return `<div class="vao escolhido" data-slot="${idx}" style="${flex}" title="${s.nome}">
-          ${fr > 1 ? `<span class="frentes">${fr}x</span>` : ""}
-          <img src="${s.arquivo}" alt="${s.nome}" draggable="false" loading="lazy">
-          <span class="nome-mini">${s.nome}</span>
+        const facings = Array.from({ length: fr }, () =>
+          `<span class="facing"><img src="${s.arquivo}" alt="${s.nome}" draggable="false" loading="lazy"></span>`).join("");
+        return `<div class="vao escolhido ${fr > 1 ? "repetido" : ""}" data-slot="${idx}" style="${flex}" title="${s.nome}${fr > 1 ? " | " + fr + " frentes" : ""}">
+          <div class="facings">${facings}</div>
+          <span class="nome-mini">${s.nome}${fr > 1 ? " · " + fr + " frentes" : ""}</span>
         </div>`;
       }).join("");
       return `<div class="prateleira"><div class="vaos">${itens}</div><div class="base"></div></div>`;
@@ -356,29 +378,59 @@
     if (!s) return;
     if (ehLinear()) {
       const cm = MOTOR.cmPorFrente(s);
-      let alvo = indiceAlvo;
-      const bomAlvo = i => estado.slots[i] && estado.slots[i].tipo === "livre" && estado.slots[i].cm >= cm;
-      if (alvo == null || !bomAlvo(alvo)) alvo = estado.slots.findIndex((x, i) => bomAlvo(i));
-      if (alvo < 0) {
+      const cabe = i => estado.slots[i] && estado.slots[i].tipo === "livre" && estado.slots[i].cm >= cm;
+      /* escolhe de onde tirar o espaco: o alvo do arraste, a lacuna ao lado do
+         bloco que ja tem esse produto, ou a maior lacuna livre */
+      let fonte = (indiceAlvo != null && cabe(indiceAlvo)) ? indiceAlvo : -1;
+      const bloco = estado.slots.findIndex(x => x.tipo === "item" && x.id === id);
+      if (fonte < 0 && bloco >= 0) {
+        if (cabe(bloco + 1)) fonte = bloco + 1;
+        else if (cabe(bloco - 1)) fonte = bloco - 1;
+      }
+      if (fonte < 0) {
+        let maior = -1;
+        estado.slots.forEach((x, i) => {
+          if (cabe(i) && (maior < 0 || x.cm > estado.slots[maior].cm)) maior = i;
+        });
+        fonte = maior;
+      }
+      if (fonte < 0) {
         const total = livreRestante();
         if (cm > total) { aviso(`${s.nome} precisa de ${cm} cm e só restam ${MOTOR.metros(total)}`); return; }
         compactarLivres();
-        alvo = estado.slots.findIndex((x, i) => bomAlvo(i));
-        if (alvo < 0) { aviso(`${s.nome} não cabe no espaço que restou`); return; }
+        fonte = estado.slots.findIndex((x, i) => cabe(i));
+        if (fonte < 0) { aviso(`${s.nome} não cabe no espaço que restou`); return; }
       }
-      const sobra = estado.slots[alvo].cm - cm;
-      const vizinho = estado.slots[alvo - 1];
-      if (vizinho && vizinho.tipo === "item" && vizinho.id === id) {
-        /* soma uma frente ao bloco que já está do lado */
-        vizinho.frentes += 1; vizinho.cm = MOTOR.espacoCm(s, estado.formato, vizinho.frentes);
-        if (sobra >= 4) estado.slots[alvo] = { tipo: "livre", cm: sobra };
-        else estado.slots.splice(alvo, 1);
+      const sobra = estado.slots[fonte].cm - cm;
+      const blocoAtual = estado.slots.findIndex(x => x.tipo === "item" && x.id === id);
+      const cap = capPrateleira();
+      const podeCrescer = i => {
+        const b = estado.slots[i];
+        return b && b.tipo === "item" && b.id === id &&
+          MOTOR.espacoCm(s, estado.formato, b.frentes + 1) <= cap;
+      };
+      if (blocoAtual >= 0 && indiceAlvo == null && podeCrescer(blocoAtual)) {
+        /* o produto se repete no bloco que ja existe e a lacuna encolhe */
+        const b = estado.slots[blocoAtual];
+        b.frentes += 1;
+        b.cm = MOTOR.espacoCm(s, estado.formato, b.frentes);
+        if (sobra >= 4) estado.slots[fonte] = { tipo: "livre", cm: sobra };
+        else estado.slots.splice(fonte, 1);
       } else {
-        const novos = [{ tipo: "item", id, frentes: 1, cm }];
-        if (sobra >= 4) novos.push({ tipo: "livre", cm: sobra });
-        else if (sobra > 0) novos[0].cm += sobra;
-        estado.slots.splice(alvo, 1, ...novos);
+        if (podeCrescer(fonte - 1)) {
+          const vizinho = estado.slots[fonte - 1];
+          vizinho.frentes += 1;
+          vizinho.cm = MOTOR.espacoCm(s, estado.formato, vizinho.frentes);
+          if (sobra >= 4) estado.slots[fonte] = { tipo: "livre", cm: sobra };
+          else estado.slots.splice(fonte, 1);
+        } else {
+          const novos = [{ tipo: "item", id, frentes: 1, cm }];
+          if (sobra >= 4) novos.push({ tipo: "livre", cm: sobra });
+          else if (sobra > 0) novos[0].cm += sobra;
+          estado.slots.splice(fonte, 1, ...novos);
+        }
       }
+      normalizarLivres();
     } else {
       let alvo = indiceAlvo;
       if (alvo == null || !estado.slots[alvo] || estado.slots[alvo].tipo !== "livre") {
@@ -419,10 +471,12 @@
         estado.slots.splice(i, 1);
       }
     }
+    normalizarLivres();
   }
   function compactarLivres() {
     const total = estado.slots.filter(x => x.tipo === "livre").reduce((t, x) => t + x.cm, 0);
     estado.slots = estado.slots.filter(x => x.tipo !== "livre").concat(total > 0 ? [{ tipo: "livre", cm: total }] : []);
+    normalizarLivres();
   }
   function atualizar() { desenharPlano(); desenharLista(); atualizarMedidores(); }
 
@@ -526,6 +580,7 @@
     if (!confirm("Tirar tudo da gôndola e montar do zero? O relógio não para.")) return;
     if (ehLinear()) {
       estado.slots = [{ tipo: "livre", cm: estado.ctx.cmTotal }];
+      normalizarLivres();
     } else {
       estado.slots = estado.slots.map(() => ({ tipo: "livre" }));
     }
