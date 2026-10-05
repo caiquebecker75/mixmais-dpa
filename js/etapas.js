@@ -28,10 +28,9 @@ window.SEGMENTOS = {
   especiais:   { nome: "Italianos",       cor: "#8B5CF6" }
 };
 
-/* Quanto do espaço incremental do plano o jogo libera para o participante.
-   1 = o participante remonta todo o resto do planograma (experiência longa).
-   0.5 = metade do espaço, que é o que cabe no tempo de uma convenção.        */
-window.FRACAO_LIVRE = 0.5;
+/* Quanto da gôndola já vem montada no sorteio do início da rodada.
+   O sorteio muda a cada partida: ninguém recebe a mesma sugestão.            */
+window.FRACAO_INICIAL = 0.5;
 
 window.FORMATOS = [
   {
@@ -39,32 +38,28 @@ window.FORMATOS = [
     nome: "Supermercado",
     resumo: "Gôndola de 7,3 m de refrigerados",
     detalhe: "Loja de bairro com uma gôndola de iogurtes. Espaço curto, sortimento tem que ser certeiro.",
-    prateleiras: 5,
-    fracaoLivre: 0.5
+    prateleiras: 6
   },
   {
     id: "cash",
     nome: "Cash and carry",
     resumo: "Gôndola de 9,8 m",
     detalhe: "Atacarejo: formato família, pack grande e preço por quilo mandam na escolha.",
-    prateleiras: 6,
-    fracaoLivre: 0.5
+    prateleiras: 7
   },
   {
     id: "hiper_minimo",
     nome: "Hiper, sortimento mínimo",
     resumo: "Seção de 43 m, sortimento enxuto",
     detalhe: "O plano mínimo que o hiper precisa ter de pé antes de abrir espaço para a cauda.",
-    prateleiras: 9,
-    fracaoLivre: 0.35
+    prateleiras: 12
   },
   {
     id: "hiper_total",
     nome: "Hiper, sortimento completo",
     resumo: "Seção de 43 m, portfólio inteiro",
     detalhe: "O hiper que compra a categoria toda: é onde a cauda longa se paga.",
-    prateleiras: 10,
-    fracaoLivre: 0.3
+    prateleiras: 13
   }
 ];
 
@@ -75,9 +70,9 @@ window.ETAPAS = [
     nome: "Iogurtes",
     marca: "DPA",
     modoEspaco: "linear",
-    titulo: "O bloco de iogurtes já está de pé",
-    resumo: "Os SKUs que fazem 80% do faturamento já estão na gôndola. O espaço que sobrou é seu.",
-    instrucao: "Escolha o que entra no espaço livre. Cada item ocupa a largura real da embalagem, então o que cabe é uma decisão.",
+    titulo: "A loja já tem meia gôndola montada",
+    resumo: "Metade do espaço veio preenchido, e vem diferente a cada rodada. Tire o que não se paga e coloque o que rende mais.",
+    instrucao: "Toque para somar uma frente, toque no produto exposto para tirar uma. Cada frente ocupa a largura real da embalagem e soma faturamento.",
     tituloPlano: "Gôndola de iogurtes",
     prateleiras: 5,
     fonte: "SKUS_DPA"
@@ -89,8 +84,8 @@ window.ETAPAS = [
     marca: "Galbani",
     modoEspaco: "vagas",
     titulo: "Agora o bloco Galbani",
-    resumo: "5 SKUs representam 80% do faturamento e já estão na gôndola. Faltam 10 espaços.",
-    instrucao: "Escolha os 10 itens incrementais que constroem o bloco italiano na loja.",
+    resumo: "Metade das vagas já veio preenchida por sorteio. Troque o que não vale a pena.",
+    instrucao: "Toque para ocupar uma vaga, toque no produto exposto para liberar. Pode repetir o mesmo item para dar mais espaço a ele.",
     tituloPlano: "Gôndola Galbani",
     colunas: 5,
     vazios: 10,
@@ -99,11 +94,12 @@ window.ETAPAS = [
   }
 ];
 
-/* Pontuacao: assertividade + cobertura + tempo = 1000 */
+/* Pontuacao: resultado financeiro + aderencia ao modelo + tempo = 1000.
+   O modelo ideal e o planograma da planilha da DPA.                          */
 window.PESOS = {
-  assertividade: 700,
-  cobertura: 100,
+  resultado: 650,
+  aderencia: 150,
   tempo: 200,
-  tempoAlvo: 240,
-  tempoLimite: 840
+  tempoAlvo: 240,   /* ate aqui o bonus de tempo e cheio */
+  tempoLimite: 840  /* daqui para frente zera */
 };

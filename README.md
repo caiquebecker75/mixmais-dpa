@@ -14,26 +14,36 @@ tempo e ranking do evento entre os tablets.
 2. **Escolha do formato de loja**: supermercado, cash and carry, hiper com sortimento mínimo
    ou hiper com sortimento completo. São as quatro abas do simulador da DPA, cada uma com a
    gôndola, o sortimento e o espaço linear reais.
-3. **Etapa 1, Iogurtes**: os SKUs que fazem 80% do faturamento naquele formato já chegam
-   posicionados, ocupando o espaço linear real deles. O que sobra de gôndola é do participante,
-   que escolhe entre todo o portfólio. **Cada embalagem ocupa a largura real vezes o número de
-   frentes**, então o que cabe é uma decisão de priorização, não uma lista de desejos.
-4. **Etapa 2, Galbani**: 5 SKUs do 80% já posicionados, 10 espaços livres e 19 opções.
-5. **Resultado**: pontuação de 0 a 1000, nível, posição no ranking do evento, o que foi bem
-   escolhido e quais oportunidades ficaram de fora em cada etapa.
+3. **Etapa 1, Iogurtes**: a gôndola chega **metade montada por sorteio**, diferente a cada
+   rodada, e o participante manda em tudo: tira o que não se paga, repete o que vende bem e
+   preenche o resto. **Cada frente ocupa a largura real da embalagem e soma faturamento**, e o
+   mesmo SKU pode levar várias frentes. Tem um botão para esvaziar a gôndola e montar do zero.
+4. **Etapa 2, Galbani**: mesma lógica em vagas iguais, também com metade sorteada.
+5. **Resultado**: pontuação de 0 a 1000, quanto a gôndola dele fatura contra o modelo da
+   companhia, posição no ranking com pódio, e o detalhe do que mais fatura e do que ficou de fora.
+
+### O objetivo é dinheiro
+
+O medidor do topo mostra o faturamento projetado da gôndola e o quanto isso representa da meta.
+A meta é o faturamento do planograma que a DPA recomenda para aquele formato. Cada frente a
+mais do mesmo item rende menos que a primeira (30% depois do que o modelo recomenda), então
+encher a gôndola de um campeão só não ganha o jogo: ganha quem chega perto da distribuição
+do modelo.
 
 ### Os quatro formatos, com os números da planilha
 
-| Formato | Gôndola | SKUs no plano | SKUs que fazem 80% do faturamento | Espaço livre no jogo |
+| Formato | Gôndola | SKUs no plano | SKUs que fazem 80% do faturamento | Faturamento do modelo |
 | --- | --- | --- | --- | --- |
-| Supermercado | 7,32 m | 40 | 13 | 1,99 m |
-| Cash and carry | 9,81 m | 41 | 14 | 2,67 m |
-| Hiper, sortimento mínimo | 43,2 m | 50 | 14 | 7,12 m |
-| Hiper, sortimento completo | 43,2 m | 86 | 23 | 6,50 m |
+| Supermercado | 7,32 m | 40 | 13 | R$ 3,69 mi |
+| Cash and carry | 9,81 m | 41 | 14 | R$ 6,06 mi |
+| Hiper, sortimento mínimo | 43,2 m | 50 | 14 | R$ 4,10 mi |
+| Hiper, sortimento completo | 43,2 m | 86 | 23 | R$ 4,66 mi |
 
-O espaço livre é metade do espaço que os itens incrementais ocupam no plano real, para a
-partida caber no tempo de uma convenção. Para a experiência completa, mude `FRACAO_LIVRE`
-para `1` em [js/etapas.js](js/etapas.js).
+Em todos eles a gôndola começa **50% preenchida por sorteio**, e o sorteio nunca se repete:
+dois participantes no mesmo formato recebem pontos de partida diferentes, com faturamentos
+iniciais diferentes. O sorteio evita de propósito os campeões de giro por centímetro, que são
+justamente o que o participante tem que descobrir. A proporção fica em `FRACAO_INICIAL`, em
+[js/etapas.js](js/etapas.js).
 
 Em cada etapa o participante arrasta o produto da lista até o espaço que quiser, ou toca nele
 para ocupar o próximo espaço livre. Tocar em um item que ele escolheu devolve para a lista.
@@ -43,14 +53,17 @@ Os SKUs do 80% ficam travados: não dá para tirar o que a loja já vende bem.
 
 | Bloco | Peso | O que mede |
 | --- | --- | --- |
-| Assertividade do MIX | 700 | Quanto do giro possível a pessoa capturou dentro do espaço que tinha |
-| Cobertura de categorias | 100 | Se as categorias do plano daquele formato foram atendidas |
+| Resultado financeiro | 650 | Quanto a gôndola montada fatura, entre o pior e o melhor uso possível daquele espaço |
+| Aderência ao modelo | 150 | Quanto a distribuição de espaço se parece com o planograma recomendado |
 | Tempo de montagem | 200 | Bônus cheio até 4min nas duas etapas, zerando em 14min |
 
-**O que vale ponto na etapa de iogurtes é giro por centímetro linear.** Um SKU que vende bem
-mas ocupa meio metro pode render menos que dois SKUs menores no mesmo espaço, e é essa conta
-que o simulador da cliente faz. SKU que não pertence ao plano daquele formato vale zero:
-ocupa gôndola e não devolve venda.
+**O modelo da planilha é o ótimo do jogo.** Reproduzir o planograma da DPA entrega 100% do
+resultado financeiro: nos testes, montar o plano exato dá 968 pontos, montar metade dele dá
+761, deixar a gôndola sorteada como veio dá 630 e encher sem critério dá 614.
+
+O que vale ponto é **giro por centímetro linear**: um SKU que vende bem mas ocupa meio metro
+pode render menos que dois menores no mesmo espaço. SKU que não pertence ao plano daquele
+formato rende só 35% do que renderia na loja certa, ou seja, ocupa gôndola e devolve pouco.
 
 Empate no total é desempatado pelo **menor tempo**. Regras em [js/motor.js](js/motor.js) e pesos
 em [js/etapas.js](js/etapas.js).
@@ -137,9 +150,11 @@ e regenere `js/dados-dpa.js`. A estrutura de `PLANOS` traz, por formato, a gônd
 centímetros, a lista de SKUs do plano, os SKUs do 80% e o espaço linear ocupado.
 
 **Packshots**: aiogurteria.com.br, chamyto.com.br e chambinho.com.br cobrem 75 dos 86 SKUs.
-Os 11 da linha Chandelle entram com um cartão tipográfico provisório, marcado como
-"packshot a receber". Basta substituir o arquivo em `assets/produtos/iogurtes/` mantendo o
-nome para o jogo passar a usar a foto oficial.
+Os 9 da linha Chandelle que já estão no varejo foram buscados nos catálogos de supermercados
+(Zaffari, Coop e Mambo, via API pública de catálogo), com o fundo branco removido para ficarem
+iguais aos demais. Só dois itens muito novos, Chandelle Flan Caramelo e Chandelle Festa
+Morango, seguem com cartão tipográfico marcado "packshot a receber". Basta substituir o arquivo
+em `assets/produtos/iogurtes/` mantendo o nome.
 
 ### Galbani
 

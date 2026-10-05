@@ -139,11 +139,18 @@
     <div class="medidores">
       <div class="marca claro p"><span class="mix"><b>MIX</b><i>+</i></span><span class="dpa">DPA</span></div>
       <div class="medidor"><b id="m-etapa">Etapa 1</b><span id="m-etapa-nome">Iogurtes</span></div>
-      <div class="medidor destaque"><b id="m-espacos">0</b><span id="rotulo-espaco">Espaço livre restante</span></div>
-      <div class="medidor"><b id="m-itens">0</b><span>Itens escolhidos</span></div>
+      <div class="medidor destaque"><b id="m-espacos">0</b><span id="rotulo-espaco">Espaço livre</span></div>
+      <div class="medidor dinheiro">
+        <b id="m-faturamento">R$ 0</b>
+        <span id="m-meta">0% da meta</span>
+        <div class="trilho-meta"><i id="m-barra"></i></div>
+      </div>
       <div class="medidor"><b id="m-tempo">00:00</b><span>Tempo de montagem</span></div>
     </div>
-    <button class="btn pequeno" id="btn-confirmar">Confirmar etapa</button>
+    <div class="acoes-barra">
+      <button class="btn pequeno linha claro" id="btn-esvaziar">Esvaziar gôndola</button>
+      <button class="btn pequeno" id="btn-confirmar">Confirmar etapa</button>
+    </div>
   </div></div>
 
   <div class="limite">
@@ -152,9 +159,8 @@
         <div class="planograma-cabecalho">
           <h3 id="plano-titulo">Gôndola</h3>
           <div class="legenda-plano">
-            <span><i style="background:#DCE6F3;border:1px solid #C6D6EA"></i>80% do faturamento, já positivado</span>
-            <span><i style="background:#EAF2FD;border:1px dashed #2E79D6"></i>Espaço livre na gôndola</span>
-            <span><i style="background:#FFFDF6;border:1px solid #F5B02A"></i>Sua escolha</span>
+            <span><i style="background:#FFFDF6;border:1px solid #F5B02A"></i>Produto na gôndola, toque para tirar uma frente</span>
+            <span><i style="background:#EAF2FD;border:1px dashed #2E79D6"></i>Espaço livre</span>
           </div>
         </div>
         <div id="prateleiras"></div>
@@ -182,18 +188,20 @@
     <div class="placar" id="res-pontos">0<small>/1000</small></div>
     <div class="nivel" id="res-nivel"></div>
     <div><div class="posicao-ranking" id="res-posicao"></div></div>
+    <div class="faturamento-resumo" id="res-financeiro"></div>
   </div></div>
 
   <div class="corpo-resultado"><div class="limite">
     <div class="blocos" id="res-blocos"></div>
 
-    <div class="grade" id="res-etapas"></div>
-
-    <div class="cartao largo" style="margin-top:18px">
+    <div class="cartao largo" id="cartao-ranking">
       <h3>Ranking do evento</h3>
       <p class="sub" id="res-ranking-sub"></p>
+      <div class="podio" id="res-podio"></div>
       <table class="tabela" id="res-ranking"></table>
     </div>
+
+    <div class="grade" id="res-etapas"></div>
 
     <div class="acoes">
       <button class="btn azul" id="btn-proximo">Próximo participante</button>
