@@ -82,11 +82,11 @@
       ? "Atualiza sozinho quando qualquer tablet termina uma partida."
       : "Somente as partidas deste aparelho.";
     $("#tabela-ranking").innerHTML = `
-      <thead><tr><th>#</th><th>Participante</th><th>Empresa</th><th>Tablet</th><th>Tempo</th><th>Nível</th><th>Pontos</th></tr></thead>
+      <thead><tr><th>#</th><th>Participante</th><th>Empresa</th><th>Loja</th><th>Tablet</th><th>Tempo</th><th>Nível</th><th>Pontos</th></tr></thead>
       <tbody>${feitos.slice(0, 20).map((r, i) => `
         <tr>
           <td class="pos ${i < 3 ? "podio-" + (i + 1) : ""}">${i + 1}</td>
-          <td>${r.nome || ""}</td><td>${r.empresa || ""}</td><td>${r.tablet || ""}</td>
+          <td>${r.nome || ""}</td><td>${r.empresa || ""}</td><td>${r.formatoNome || ""}</td><td>${r.tablet || ""}</td>
           <td>${MOTOR.formatarTempo(r.segundos || 0)}</td><td>${r.nivel || ""}</td>
           <td><b>${r.pontuacao}</b></td>
         </tr>`).join("")}</tbody>`;
@@ -122,7 +122,7 @@
     URL.revokeObjectURL(a.href);
   }
   $("#btn-csv").addEventListener("click", () => {
-    const cols = ["nome", "email", "empresa", "telefone", "area", "pontuacao", "nivel", "segundos", "tablet", "status", "criadoEm", "evento"];
+    const cols = ["nome", "email", "empresa", "telefone", "area", "formatoNome", "pontuacao", "nivel", "segundos", "tablet", "status", "criadoEm", "evento"];
     const linhas = [cols.concat(["escolhas", "esquecidos"]).join(";")];
     registros.forEach(r => {
       const esc = (r.etapas || []).flatMap(e => e.escolhidos || []).join(" | ");
