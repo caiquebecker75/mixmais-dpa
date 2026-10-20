@@ -1,234 +1,136 @@
 /* ==========================================================================
-   MIX+ DPA | motor do jogo
+   MIX+ DPA | motor da atividade
    --------------------------------------------------------------------------
-   A planilha da DPA e o modelo ideal: para cada formato de loja ela diz quais
-   SKUs entram, com quantas frentes, quanto espaco linear ocupam e quanto giram.
-   O jogo comeca com metade da gondola montada por sorteio, diferente a cada
-   rodada, e o participante tem que chegar o mais perto possivel do resultado
-   financeiro do modelo, no menor tempo.
+   A loja ja tem o sortimento de maior volume. O participante escolhe quais
+   itens incrementais entrariam para vender mais. A correcao usa o simulador
+   da DPA: potencial de venda do SKU naquele formato de loja e a margem dele.
+   Durante a escolha nada disso aparece na tela, senao entrega a resposta.
    ========================================================================== */
 (function () {
 
   const skusDaEtapa = etapa => window[etapa.fonte] || [];
   const plano = fid => (window.PLANOS || {})[fid] || null;
   const noPlano = (sku, fid) => !!(sku.planos && sku.planos[fid]);
+  const catDe = sku => sku.cat || sku.seg;
 
-  /* ---------------- espaco ---------------- */
-  function frentesPlano(sku, fid) {
-    if (noPlano(sku, fid)) return sku.planos[fid].frentes || 1;
-    const fs = Object.values(sku.planos || {}).map(p => p.frentes || 1);
-    return fs.length ? Math.max(1, Math.round(fs.reduce((a, b) => a + b, 0) / fs.length)) : 1;
-  }
-  const larguraDe = sku => sku.larg || 10;
-  const cmPorFrente = sku => Math.round(larguraDe(sku) * 10) / 10;
-  const espacoCm = (sku, fid, frentes) => Math.round(cmPorFrente(sku) * (frentes || 1) * 10) / 10;
-
-  /* ---------------- dinheiro ---------------- */
-  /* Giro que uma frente do SKU entrega naquele formato. Fora do plano o item
-     ainda vende alguma coisa, mas bem menos: nao e o shopper daquela loja.    */
-  function giroPorFrente(sku, fid) {
-    if (noPlano(sku, fid)) {
-      const p = sku.planos[fid];
-      return p.giro / Math.max(1, p.frentes || 1);
+  /* ---------------- potencial de venda ---------------- */
+  /* Quanto o SKU adiciona de venda naquela loja. Item que nao faz parte do
+     plano do formato ainda vende alguma coisa, mas bem menos: nao e o shopper
+     daquela loja.                                                            */
+  function potencial(sku, fid) {
+    if (sku.planos) {
+      if (noPlano(sku, fid)) return sku.planos[fid].giro;
+      const gs = Object.values(sku.planos);
+      if (!gs.length) return 0;
+      return (gs.reduce((t, p) => t + p.giro, 0) / gs.length) * 0.35;
     }
-    const gs = Object.values(sku.planos || {});
-    if (!gs.length) return 0;
-    const media = gs.reduce((t, p) => t + p.giro / Math.max(1, p.frentes || 1), 0) / gs.length;
-    return media * 0.35;
+    /* etapa Galbani, enquanto nao vem a base da marca: peso de referencia */
+    return (sku.valor || 0) * 1000;
   }
-  /* Frente a mais rende menos: depois do que o modelo recomenda, cada frente
-     extra entrega 30% do que a primeira entrega.                              */
-  function giroDoBloco(sku, fid, frentes) {
-    const base = giroPorFrente(sku, fid);
-    const ideal = noPlano(sku, fid) ? frentesPlano(sku, fid) : 1;
-    const dentro = Math.min(frentes, ideal);
-    const extra = Math.max(0, frentes - ideal);
-    return base * (dentro + extra * 0.3);
+  /* Indice de margem. A planilha tem dois outliers, entao o valor entra
+     limitado para nao distorcer a nota.                                      */
+  function margem(sku) {
+    const m = sku.margem != null ? sku.margem : (sku.valor ? sku.valor / 14 : 3);
+    return Math.max(0.2, Math.min(8, m));
   }
-  const densidade = (sku, fid) => giroPorFrente(sku, fid) / Math.max(1, cmPorFrente(sku));
 
-  /* ---------------- contexto do formato ---------------- */
-  function contexto(etapa, fid) {
-    if (etapa.modoEspaco !== "linear") return null;
-    const p = plano(fid);
+  /* ---------------- sortimento da loja e lista de opcoes ---------------- */
+  function fixos(etapa, fid) {
     const todos = skusDaEtapa(etapa);
-    const cmTotal = Math.round(p.linearPlano * p.gondolaCm);
-    return {
-      todos,
-      doPlano: todos.filter(s => noPlano(s, fid)),
-      gondolaCm: p.gondolaCm,
-      cmTotal,
-      metaFaturamento: p.skusPlano.reduce((t, id) => {
-        const s = todos.find(x => x.id === id);
-        return t + (s ? s.planos[fid].giro : 0);
-      }, 0),
-      skusPlano: p.skusPlano
-    };
+    if (etapa.fonte === "SKUS_DPA") {
+      const p = plano(fid);
+      return p.core.map(id => todos.find(s => s.id === id)).filter(Boolean)
+        .sort((a, b) => potencial(b, fid) - potencial(a, fid));
+    }
+    return todos.filter(s => s.core);
   }
 
-  /* o melhor uso possivel do espaco, por giro por centimetro */
-  function melhorPossivel(etapa, fid) {
-    const ctx = contexto(etapa, fid);
-    const ordenados = ctx.doPlano.slice().sort((a, b) => densidade(b, fid) - densidade(a, fid));
-    const out = []; let usado = 0;
-    for (const s of ordenados) {
-      const alvo = frentesPlano(s, fid);
-      for (let f = 1; f <= alvo; f++) {
-        const cm = cmPorFrente(s);
-        if (usado + cm > ctx.cmTotal) break;
-        usado += cm;
-        const achado = out.find(o => o.id === s.id);
-        if (achado) achado.frentes++; else out.push({ id: s.id, frentes: 1 });
-      }
-    }
-    return out;
-  }
-  /* o pior uso possivel, usado como piso da nota */
-  function piorPossivel(etapa, fid) {
-    const ctx = contexto(etapa, fid);
-    const ordenados = ctx.todos.slice().sort((a, b) => densidade(a, fid) - densidade(b, fid));
-    const out = []; let usado = 0;
-    for (const s of ordenados) {
-      const cm = cmPorFrente(s);
-      while (usado + cm <= ctx.cmTotal) {
-        usado += cm;
-        const achado = out.find(o => o.id === s.id);
-        if (achado) achado.frentes++; else out.push({ id: s.id, frentes: 1 });
-        if (out.find(o => o.id === s.id).frentes >= 3) break;
-      }
-      if (usado >= ctx.cmTotal) break;
-    }
-    return out;
-  }
+  /* Lista enxuta de incrementais: o que o plano daquele formato pede, os de
+     maior margem e uma amostra de outros formatos como distratores.          */
+  function opcoes(etapa, fid) {
+    const todos = skusDaEtapa(etapa);
+    const idsFixos = new Set(fixos(etapa, fid).map(s => s.id));
+    const resto = todos.filter(s => !idsFixos.has(s.id));
+    if (etapa.fonte !== "SKUS_DPA") return ordenarLista(resto);
 
-  /* ---------------- sorteio da gondola inicial ---------------- */
-  /* Metade da gondola ja vem montada, diferente a cada rodada. O sorteio evita
-     os campeoes de giro por centimetro: a graca e o participante descobrir. */
-  function sortearInicial(etapa, fid, fracao) {
-    const ctx = contexto(etapa, fid);
-    const alvo = ctx.cmTotal * (fracao || 0.5);
-    const pool = ctx.todos.slice().sort((a, b) => densidade(b, fid) - densidade(a, fid));
-    const semTopo = pool.slice(Math.ceil(pool.length * 0.18));
-    for (let i = semTopo.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [semTopo[i], semTopo[j]] = [semTopo[j], semTopo[i]];
-    }
-    const out = []; let usado = 0;
-    for (const s of semTopo) {
-      if (usado >= alvo) break;
-      const frentes = 1 + (Math.random() < 0.38 ? 1 : 0);
-      const cm = espacoCm(s, fid, frentes);
-      if (usado + cm > alvo + 12) continue;
-      out.push({ id: s.id, frentes });
-      usado += cm;
-    }
-    return out;
+    const doPlano = resto.filter(s => noPlano(s, fid)).sort((a, b) => potencial(b, fid) - potencial(a, fid));
+    const fora = resto.filter(s => !noPlano(s, fid)).sort((a, b) => margem(b) - margem(a));
+    const limite = etapa.opcoes || 30;
+    const escolhidos = [];
+    const usar = s => { if (!escolhidos.find(x => x.id === s.id) && escolhidos.length < limite) escolhidos.push(s); };
+
+    /* o miolo da lista e o plano do formato */
+    doPlano.slice(0, Math.round(limite * 0.65)).forEach(usar);
+    /* garante os de maior margem do portfolio, que e o aprendizado comercial */
+    todos.slice().sort((a, b) => margem(b) - margem(a))
+      .filter(s => !idsFixos.has(s.id)).slice(0, 6).forEach(usar);
+    /* distratores: itens que giram em outros formatos */
+    fora.slice(0, 6).forEach(usar);
+    /* completa com o que sobrou do plano */
+    doPlano.forEach(usar);
+    resto.forEach(usar);
+    return ordenarLista(escolhidos.slice(0, limite));
+  }
+  /* A lista nunca aparece ordenada por valor, senao a ordem entrega a resposta */
+  function ordenarLista(lista) {
+    return lista.slice().sort((a, b) =>
+      (catDe(a) || "").localeCompare(catDe(b) || "") || a.nome.localeCompare(b.nome));
   }
 
   /* ---------------- avaliacao ---------------- */
-  function faturamentoDe(lista, etapa, fid) {
-    const todos = skusDaEtapa(etapa);
-    return lista.reduce((t, e) => {
-      const s = todos.find(x => x.id === e.id);
-      return s ? t + giroDoBloco(s, fid, e.frentes) : t;
-    }, 0);
-  }
+  function avaliarEtapa(etapa, idsEscolhidos, fid) {
+    const lista = opcoes(etapa, fid);
+    const n = etapa.escolhas;
+    const escolhidos = idsEscolhidos.map(id => lista.find(s => s.id === id)).filter(Boolean);
 
-  function avaliarEtapa(etapa, escolhas, fid) {
-    const todos = skusDaEtapa(etapa);
-    const blocos = escolhas.map(e => ({ sku: todos.find(x => x.id === e.id), frentes: e.frentes }))
-      .filter(b => b.sku);
+    const porPotencial = lista.slice().sort((a, b) => potencial(b, fid) - potencial(a, fid));
+    const melhores = porPotencial.slice(0, n);
+    const piores = porPotencial.slice(-n);
+    const teto = melhores.reduce((t, s) => t + potencial(s, fid), 0) || 1;
+    const piso = piores.reduce((t, s) => t + potencial(s, fid), 0);
+    const meu = escolhidos.reduce((t, s) => t + potencial(s, fid), 0);
+    const notaVenda = Math.max(0, Math.min(1, (meu - piso) / Math.max(1, teto - piso)));
 
-    if (etapa.modoEspaco === "linear") {
-      const ctx = contexto(etapa, fid);
-      const melhor = melhorPossivel(etapa, fid);
-      const pior = piorPossivel(etapa, fid);
-      const teto = faturamentoDe(melhor, etapa, fid);
-      const piso = faturamentoDe(pior, etapa, fid);
-      const meu = faturamentoDe(escolhas, etapa, fid);
-      const resultado = Math.max(0, Math.min(1, (meu - piso) / Math.max(1, teto - piso)));
+    const porMargem = lista.slice().sort((a, b) => margem(b) - margem(a));
+    const mTeto = porMargem.slice(0, n).reduce((t, s) => t + margem(s), 0) / n;
+    const mPiso = porMargem.slice(-n).reduce((t, s) => t + margem(s), 0) / n;
+    const mMeu = escolhidos.length ? escolhidos.reduce((t, s) => t + margem(s), 0) / escolhidos.length : 0;
+    const notaMargem = Math.max(0, Math.min(1, (mMeu - mPiso) / Math.max(0.01, mTeto - mPiso)));
 
-      /* aderencia ao modelo: quanto do espaco foi distribuido como a planilha manda */
-      let desvio = 0;
-      const vistos = new Set();
-      blocos.forEach(b => {
-        vistos.add(b.sku.id);
-        const ideal = noPlano(b.sku, fid) ? espacoCm(b.sku, fid, frentesPlano(b.sku, fid)) : 0;
-        desvio += Math.abs(espacoCm(b.sku, fid, b.frentes) - ideal);
-      });
-      ctx.doPlano.forEach(s => {
-        if (!vistos.has(s.id)) desvio += espacoCm(s, fid, frentesPlano(s, fid));
-      });
-      const aderencia = Math.max(0, 1 - desvio / Math.max(1, 2 * ctx.cmTotal));
+    const catsLista = [...new Set(lista.map(catDe))];
+    const catsMinhas = [...new Set(escolhidos.map(catDe))];
+    const alvoCats = Math.min(n, catsLista.length, 5);
+    const notaCobertura = Math.max(0, Math.min(1, catsMinhas.length / alvoCats));
 
-      const idsPlano = new Set(ctx.skusPlano);
-      const acertos = blocos.filter(b => idsPlano.has(b.sku.id))
-        .sort((a, b) => giroDoBloco(b.sku, fid, b.frentes) - giroDoBloco(a.sku, fid, a.frentes));
-      const foraDoPlano = blocos.filter(b => !idsPlano.has(b.sku.id))
-        .sort((a, b) => espacoCm(b.sku, fid, b.frentes) - espacoCm(a.sku, fid, a.frentes));
-      const escolhidosIds = new Set(blocos.map(b => b.sku.id));
-      const perdidos = melhor.filter(m => !escolhidosIds.has(m.id))
-        .map(m => ({ sku: todos.find(x => x.id === m.id), frentes: m.frentes }))
-        .filter(x => x.sku)
-        .sort((a, b) => densidade(b.sku, fid) - densidade(a.sku, fid));
+    const idsMelhores = new Set(melhores.map(s => s.id));
+    const acertos = escolhidos.filter(s => idsMelhores.has(s.id))
+      .sort((a, b) => potencial(b, fid) - potencial(a, fid));
+    const perdidos = melhores.filter(s => !idsEscolhidos.includes(s.id));
+    const foraDoPlano = etapa.fonte === "SKUS_DPA"
+      ? escolhidos.filter(s => !noPlano(s, fid)) : [];
 
-      return {
-        etapa, fid, modo: "linear", blocos,
-        faturamento: Math.round(meu), teto: Math.round(teto), piso: Math.round(piso),
-        meta: Math.round(ctx.metaFaturamento),
-        aproveitamento: resultado, aderencia,
-        espacoUsado: Math.round(blocos.reduce((t, b) => t + espacoCm(b.sku, fid, b.frentes), 0)),
-        espacoTotal: ctx.cmTotal,
-        acertos, perdidos, foraDoPlano,
-        itens: blocos.length,
-        frentes: blocos.reduce((t, b) => t + b.frentes, 0)
-      };
-    }
-
-    /* etapa de vagas (Galbani) */
-    const ideal = incrementais(etapa).slice().sort((a, b) => b.valor - a.valor).slice(0, etapa.vazios);
-    const piores = incrementais(etapa).slice().sort((a, b) => a.valor - b.valor).slice(0, etapa.vazios);
-    const valorDe = lista => lista.reduce((t, e) => {
-      const s = todos.find(x => x.id === e.id);
-      return s ? t + s.valor * (e.frentes || 1) : t;
-    }, 0);
-    const teto = ideal.reduce((t, s) => t + s.valor, 0) || 1;
-    const piso = piores.reduce((t, s) => t + s.valor, 0);
-    const meu = valorDe(escolhas);
-    const resultado = Math.max(0, Math.min(1, (meu - piso) / Math.max(1, teto - piso)));
-    const idsIdeais = new Set(ideal.map(s => s.id));
-    const escolhidosIds = new Set(blocos.map(b => b.sku.id));
     return {
-      etapa, fid, modo: "vagas", blocos,
-      faturamento: Math.round(meu), teto: Math.round(teto), piso: Math.round(piso), meta: Math.round(teto),
-      aproveitamento: resultado,
-      aderencia: blocos.length ? blocos.filter(b => idsIdeais.has(b.sku.id)).length / Math.max(1, blocos.length) : 0,
-      acertos: blocos.filter(b => idsIdeais.has(b.sku.id)),
-      perdidos: ideal.filter(s => !escolhidosIds.has(s.id)).map(s => ({ sku: s, frentes: 1 })),
-      foraDoPlano: [],
-      itens: blocos.length,
-      frentes: blocos.reduce((t, b) => t + b.frentes, 0)
+      etapa, fid, escolhidos, lista, melhores,
+      incremento: Math.round(meu), teto: Math.round(teto), piso: Math.round(piso),
+      notaVenda, notaMargem, notaCobertura,
+      margemMedia: mMeu, margemTeto: mTeto,
+      categorias: catsMinhas,
+      acertos, perdidos, foraDoPlano,
+      itens: escolhidos.length
     };
-  }
-
-  /* etapa de vagas: helpers antigos */
-  const base = etapa => skusDaEtapa(etapa).filter(s => s.core);
-  function incrementais(etapa) {
-    return skusDaEtapa(etapa).filter(s => !s.core)
-      .slice().sort((a, b) => (a.seg || "").localeCompare(b.seg || "") || a.nome.localeCompare(b.nome));
   }
 
   function pontuar(resultados, segundos) {
     const P = window.PESOS;
-    const res = resultados.reduce((t, r) => t + r.aproveitamento, 0) / resultados.length;
-    const ade = resultados.reduce((t, r) => t + r.aderencia, 0) / resultados.length;
-    const pRes = Math.round(res * P.resultado);
-    const pAde = Math.round(ade * P.aderencia);
+    const med = f => resultados.reduce((t, r) => t + f(r), 0) / resultados.length;
+    const pVenda = Math.round(med(r => r.notaVenda) * P.venda);
+    const pMargem = Math.round(med(r => r.notaMargem) * P.margem);
+    const pCob = Math.round(med(r => r.notaCobertura) * P.cobertura);
     let fator = 1;
     if (segundos > P.tempoAlvo) fator = 1 - (segundos - P.tempoAlvo) / (P.tempoLimite - P.tempoAlvo);
     fator = Math.max(0, Math.min(1, fator));
     const pTempo = Math.round(fator * P.tempo);
-    const total = pRes + pAde + pTempo;
+    const total = pVenda + pMargem + pCob + pTempo;
     const nivel = total >= 880 ? "Especialista de MIX"
                 : total >= 740 ? "Executor avançado"
                 : total >= 600 ? "Bom caminho"
@@ -236,11 +138,13 @@
     return {
       total, nivel,
       blocos: [
-        { chave: "resultado", nome: "Resultado financeiro", pontos: pRes, max: P.resultado,
-          detalhe: Math.round(res * 100) + "% do faturamento possível no espaço da loja" },
-        { chave: "aderencia", nome: "Aderência ao modelo", pontos: pAde, max: P.aderencia,
-          detalhe: Math.round(ade * 100) + "% de semelhança com o planograma recomendado" },
-        { chave: "tempo", nome: "Tempo de montagem", pontos: pTempo, max: P.tempo,
+        { chave: "venda", nome: "Potencial de venda", pontos: pVenda, max: P.venda,
+          detalhe: Math.round(med(r => r.notaVenda) * 100) + "% do incremento possível com o número de itens que você tinha" },
+        { chave: "margem", nome: "Margem do mix", pontos: pMargem, max: P.margem,
+          detalhe: Math.round(med(r => r.notaMargem) * 100) + "% do ganho de margem possível" },
+        { chave: "cobertura", nome: "Equilíbrio do sortimento", pontos: pCob, max: P.cobertura,
+          detalhe: Math.round(med(r => r.notaCobertura) * 100) + "% de equilíbrio entre as categorias" },
+        { chave: "tempo", nome: "Tempo de decisão", pontos: pTempo, max: P.tempo,
           detalhe: formatarTempo(segundos) + " nas duas etapas" }
       ],
       segundos, fatorTempo: fator
@@ -251,7 +155,6 @@
     const m = Math.floor(s / 60), r = s % 60;
     return (m > 0 ? m + "min " : "") + String(r).padStart(m > 0 ? 2 : 1, "0") + "s";
   }
-  const metros = cm => (cm / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " m";
   function dinheiro(v) {
     if (v >= 1000000) return "R$ " + (v / 1000000).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + " mi";
     if (v >= 1000) return "R$ " + Math.round(v / 1000).toLocaleString("pt-BR") + " mil";
@@ -259,8 +162,7 @@
   }
 
   window.MOTOR = {
-    skusDaEtapa, base, incrementais, contexto, noPlano, frentesPlano, cmPorFrente, espacoCm,
-    giroPorFrente, giroDoBloco, densidade, sortearInicial, melhorPossivel, piorPossivel,
-    faturamentoDe, avaliarEtapa, pontuar, formatarTempo, metros, dinheiro
+    skusDaEtapa, fixos, opcoes, potencial, margem, noPlano, catDe,
+    avaliarEtapa, pontuar, formatarTempo, dinheiro
   };
 })();

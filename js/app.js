@@ -11,9 +11,8 @@
     formato: null,
     etapaIdx: 0,
     etapa: null,
-    slots: [],       /* [{tipo:'item', id, frentes, cm} | {tipo:'livre', cm}] */
-    ctx: null,
-    sorteioInicial: {},
+    lista: [],          /* opcoes da etapa */
+    marcados: [],       /* ids escolhidos */
     escolhas: {},
     tempos: {},
     inicio: 0,
@@ -43,7 +42,6 @@
   const relogio = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
   const normal = t => (t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const seg = s => SEGMENTOS[s] || { nome: s, cor: "#1B4F9C" };
-  const ehLinear = () => estado.etapa.modoEspaco === "linear";
 
   /* ---------------- abertura ---------------- */
   $("#nome-evento").textContent = CFG.evento + (CFG.tablet ? " | tablet " + CFG.tablet : "");
@@ -92,7 +90,7 @@
       dispositivo: navigator.userAgent.includes("Mobi") ? "celular" : "tablet ou computador"
     });
     btn.disabled = false; btn.textContent = "Iniciar";
-    estado.etapaIdx = 0; estado.escolhas = {}; estado.tempos = {}; estado.sorteioInicial = {};
+    estado.etapaIdx = 0; estado.escolhas = {}; estado.tempos = {};
     montarFormatos();
     irPara("tela-formato");
   });
@@ -101,19 +99,15 @@
   function montarFormatos() {
     $("#lista-formatos").innerHTML = FORMATOS.map(f => {
       const p = PLANOS[f.id];
-      const cmTotal = Math.round(p.linearPlano * p.gondolaCm);
-      const meta = p.skusPlano.reduce((t, id) => {
-        const s = SKUS_DPA.find(x => x.id === id);
-        return t + (s ? s.planos[f.id].giro : 0);
-      }, 0);
+      const et = ETAPAS[0];
       return `<button type="button" class="cartao-formato" data-formato="${f.id}">
         <span class="chip">${f.resumo}</span>
         <h3>${f.nome}</h3>
         <p>${f.detalhe}</p>
         <div class="numeros">
-          <div><b>${MOTOR.metros(cmTotal)}</b><span>de gôndola para montar</span></div>
-          <div><b>${MOTOR.dinheiro(meta)}</b><span>é o resultado do modelo</span></div>
-          <div><b>${p.skusPlano.length}</b><span>SKUs no plano da loja</span></div>
+          <div><b>${p.core.length}</b><span>SKUs de maior volume já na loja</span></div>
+          <div><b>${et.escolhas}</b><span>produtos você pode incluir</span></div>
+          <div><b>${p.skusPlano.length}</b><span>SKUs no plano da companhia</span></div>
         </div>
       </button>`;
     }).join("");
@@ -137,90 +131,42 @@
     const e = ETAPAS[estado.etapaIdx];
     estado.etapa = e;
     montarPassos();
+    const fmt = FORMATOS.find(f => f.id === estado.formato);
+    const base = MOTOR.fixos(e, estado.formato);
+    const lista = MOTOR.opcoes(e, estado.formato);
     $("#etapa-numero").textContent = e.numero;
     $("#etapa-marca").textContent = e.nome;
     $("#etapa-titulo").textContent = e.titulo;
     $("#etapa-resumo").textContent = e.resumo;
-    if (e.modoEspaco === "linear") {
-      const ctx = MOTOR.contexto(e, estado.formato);
-      const fmt = FORMATOS.find(f => f.id === estado.formato);
-      $("#etapa-regras").innerHTML = `
-        <div class="regra"><b>${MOTOR.metros(ctx.cmTotal)}</b><p>de gôndola em ${fmt.nome.toLowerCase()}. Metade já vem montada por sorteio e você pode mexer em tudo.</p></div>
-        <div class="regra"><b>${MOTOR.dinheiro(ctx.metaFaturamento)}</b><p>é o faturamento do planograma que a companhia recomenda. Chegue o mais perto que conseguir.</p></div>
-        <div class="regra"><b>${ctx.todos.length}</b><p>SKUs disponíveis. Pode repetir o mesmo item para dar mais frentes a ele.</p></div>`;
-    } else {
-      $("#etapa-regras").innerHTML = `
-        <div class="regra"><b>${e.vazios + MOTOR.base(e).length}</b><p>vagas na gôndola, metade já preenchida por sorteio.</p></div>
-        <div class="regra"><b>${MOTOR.incrementais(e).length}</b><p>opções na lista, e você pode repetir o mesmo item.</p></div>
-        <div class="regra"><b>Tempo</b><p>conta ponto: quanto mais rápido chegar perto do ideal, melhor.</p></div>`;
-    }
+    $("#etapa-regras").innerHTML = `
+      <div class="regra"><b>${base.length}</b><p>SKUs de maior volume já estão no sortimento de ${fmt.nome.toLowerCase()}.</p></div>
+      <div class="regra"><b>${e.escolhas}</b><p>produtos você pode incluir. Escolha os que mais somam venda e margem.</p></div>
+      <div class="regra"><b>${lista.length}</b><p>opções na lista, de todas as categorias. Nem toda opção serve para esta loja.</p></div>`;
     irPara("tela-etapa");
   }
   $("#btn-abrir-etapa").addEventListener("click", iniciarEtapa);
 
-  /* ---------------- montagem inicial ---------------- */
-  function slotsLinear(e) {
-    const ctx = MOTOR.contexto(e, estado.formato);
-    estado.ctx = ctx;
-    const sorteio = MOTOR.sortearInicial(e, estado.formato, window.FRACAO_INICIAL || 0.5);
-    estado.sorteioInicial[e.id] = sorteio.map(s => ({ id: s.id, frentes: s.frentes }));
-    const slots = sorteio.map(s => {
-      const sku = ctx.todos.find(x => x.id === s.id);
-      return { tipo: "item", id: s.id, frentes: s.frentes, cm: MOTOR.espacoCm(sku, estado.formato, s.frentes) };
-    });
-    const usado = slots.reduce((t, s) => t + s.cm, 0);
-    const livre = Math.max(0, ctx.cmTotal - usado);
-    const n = Math.max(3, Math.min(14, Math.ceil(livre / 48)));
-    const pedaco = Math.round(livre / n);
-    const saida = [];
-    const passo = Math.max(1, Math.floor(slots.length / n));
-    let postas = 0;
-    slots.forEach((b, i) => {
-      saida.push(b);
-      if (postas < n && (i + 1) % passo === 0) {
-        saida.push({ tipo: "livre", cm: postas === n - 1 ? livre - pedaco * (n - 1) : pedaco });
-        postas++;
-      }
-    });
-    while (postas < n) { saida.push({ tipo: "livre", cm: pedaco }); postas++; }
-    estado.slots = saida;
-    normalizarLivres();
-    return estado.slots;
-  }
-
-  function slotsVagas(e) {
-    const total = MOTOR.base(e).length + e.vazios;
-    const pool = MOTOR.skusDaEtapa(e).slice();
-    const sorteio = [];
-    const quantas = Math.round(total * (window.FRACAO_INICIAL || 0.5));
-    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-    for (let i = 0; i < quantas && i < pool.length; i++) sorteio.push(pool[i]);
-    estado.sorteioInicial[e.id] = sorteio.map(s => ({ id: s.id, frentes: 1 }));
-    const slots = [];
-    for (let i = 0; i < total; i++) {
-      slots.push(i < sorteio.length ? { tipo: "item", id: sorteio[i].id, frentes: 1 } : { tipo: "livre" });
-    }
-    for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
-    return slots;
-  }
-
+  /* ---------------- seleção ---------------- */
   function iniciarEtapa() {
     const e = estado.etapa;
-    estado.slots = e.modoEspaco === "linear" ? slotsLinear(e) : slotsVagas(e);
+    estado.lista = MOTOR.opcoes(e, estado.formato);
+    estado.marcados = [];
     estado.filtro = "todos"; estado.busca = "";
     $("#busca").value = "";
+    const fmt = FORMATOS.find(f => f.id === estado.formato);
+    const base = MOTOR.fixos(e, estado.formato);
     $("#m-etapa").textContent = "Etapa " + e.numero;
     $("#m-etapa-nome").textContent = e.nome;
-    const fmt = FORMATOS.find(f => f.id === estado.formato);
-    $("#plano-titulo").textContent = e.tituloPlano + (e.modoEspaco === "linear" ? " | " + fmt.nome : "");
-    $("#btn-confirmar").textContent = "Confirmar etapa " + e.numero;
-    $("#rotulo-espaco").textContent = e.modoEspaco === "linear" ? "Espaço livre" : "Vagas livres";
+    $("#plano-titulo").textContent = "A loja já trabalha";
+    $("#plano-sub").textContent = base.length + " SKUs de maior volume em " + fmt.nome.toLowerCase() +
+      ". Esses já estão garantidos no sortimento.";
+    $("#titulo-escolha").textContent = "Escolha até " + e.escolhas + " produtos para incluir";
     $("#catalogo-dica").textContent = e.instrucao;
-    montarAbas(); desenharPlano(); desenharLista(); atualizarMedidores();
-    if (ehLinear()) {
-      aviso("A gôndola sorteada fatura " + MOTOR.dinheiro(faturamentoAtual()) +
-        ". O modelo da companhia faria " + MOTOR.dinheiro(estado.ctx.metaFaturamento) + ".");
-    }
+    $("#btn-confirmar").textContent = "Confirmar etapa " + e.numero;
+    desenharFixos(base);
+    montarAbas();
+    desenharLista();
+    atualizarContador();
     estado.inicio = Date.now();
     clearInterval(estado.cronometro);
     estado.cronometro = setInterval(() => {
@@ -230,91 +176,17 @@
     irPara("tela-jogo");
   }
 
-  /* ---------------- estado da gôndola ---------------- */
-  const skuPorId = id => (MOTOR.skusDaEtapa(estado.etapa) || []).find(s => s.id === id);
-  function escolhasAtuais() {
-    const m = new Map();
-    estado.slots.filter(s => s.tipo === "item").forEach(s => {
-      m.set(s.id, (m.get(s.id) || 0) + (s.frentes || 1));
-    });
-    return [...m.entries()].map(([id, frentes]) => ({ id, frentes }));
-  }
-  const livreRestante = () => ehLinear()
-    ? estado.slots.filter(s => s.tipo === "livre").reduce((t, s) => t + s.cm, 0)
-    : estado.slots.filter(s => s.tipo === "livre").length;
-  const faturamentoAtual = () => MOTOR.faturamentoDe(escolhasAtuais(), estado.etapa, estado.formato);
-
-  /* largura fisica de cada prateleira, igual para todas: e ela que mantem a
-     escala do planograma honesta, um produto de 6 cm sempre aparece como 6 cm */
-  function capPrateleira() {
-    const e = estado.etapa;
-    const fmt = FORMATOS.find(f => f.id === estado.formato) || {};
-    const n = fmt.prateleiras || e.prateleiras || 6;
-    return (estado.ctx ? estado.ctx.cmTotal : 732) / n;
-  }
-
-  /* lacuna nunca pode ser maior que uma prateleira, senao a escala quebra */
-  function normalizarLivres() {
-    if (!ehLinear()) return;
-    const cap = capPrateleira();
-    const out = [];
-    estado.slots.forEach(s => {
-      if (s.tipo !== "livre" || s.cm <= cap) { out.push(s); return; }
-      let resto = s.cm;
-      while (resto > cap) { out.push({ tipo: "livre", cm: Math.round(cap) }); resto -= Math.round(cap); }
-      if (resto > 0) out.push({ tipo: "livre", cm: resto });
-    });
-    estado.slots = out;
-  }
-
-  function prateleiras() {
-    const e = estado.etapa;
-    if (!ehLinear()) {
-      const cols = e.colunas, out = [];
-      for (let i = 0; i < estado.slots.length; i += cols) out.push({ cap: cols, itens: estado.slots.slice(i, i + cols) });
-      return out;
-    }
-    const cap = capPrateleira();
-    const out = []; let atual = [], soma = 0;
-    estado.slots.forEach(s => {
-      const cm = s.cm || 0;
-      if (soma + cm > cap && atual.length) { out.push({ cap, itens: atual }); atual = []; soma = 0; }
-      atual.push(s); soma += cm;
-    });
-    if (atual.length) out.push({ cap, itens: atual });
-    return out;
-  }
-
-  function desenharPlano() {
-    const linear = ehLinear();
-    const html = prateleiras().map(prat => {
-      const cap = prat.cap || 1;
-      const itens = prat.itens.map(slot => {
-        const idx = estado.slots.indexOf(slot);
-        const flex = linear ? `flex:0 0 ${(slot.cm / cap * 100).toFixed(3)}%` : "flex:1 1 0";
-        if (slot.tipo === "livre") {
-          return `<div class="vao vazio" data-slot="${idx}" style="${flex}">${linear ? `<span class="cm">${Math.round(slot.cm)} cm</span>` : ""}</div>`;
-        }
-        const s = skuPorId(slot.id);
-        const fr = slot.frentes || 1;
-        const facings = Array.from({ length: fr }, () =>
-          `<span class="facing"><img src="${s.arquivo}" alt="${s.nome}" draggable="false" loading="lazy"></span>`).join("");
-        return `<div class="vao escolhido ${fr > 1 ? "repetido" : ""}" data-slot="${idx}" style="${flex}" title="${s.nome}${fr > 1 ? " | " + fr + " frentes" : ""}">
-          <div class="facings">${facings}</div>
-          <span class="nome-mini">${s.nome}${fr > 1 ? " · " + fr + " frentes" : ""}</span>
-        </div>`;
-      }).join("");
-      return `<div class="prateleira"><div class="vaos">${itens}</div><div class="base"></div></div>`;
-    }).join("");
-    $("#prateleiras").innerHTML = html;
-    $$("#prateleiras .vao").forEach(v => prepararArraste(v, { tipo: "slot", index: Number(v.dataset.slot) }));
+  function desenharFixos(base) {
+    $("#fixos").innerHTML = base.map(s => `
+      <div class="fixo" title="${s.nome}">
+        <img src="${s.arquivo}" alt="${s.nome}" loading="lazy">
+        <span>${s.nome}</span>
+      </div>`).join("");
   }
 
   function montarAbas() {
-    const e = estado.etapa;
-    const lista = ehLinear() ? estado.ctx.todos : MOTOR.skusDaEtapa(e);
-    const segs = [...new Set(lista.map(s => s.cat || s.seg))];
-    $("#abas").innerHTML = [`<button data-seg="todos" class="ativo">Todos</button>`]
+    const segs = [...new Set(estado.lista.map(MOTOR.catDe))];
+    $("#abas").innerHTML = [`<button data-seg="todos" class="ativo">Todas</button>`]
       .concat(segs.map(s => `<button data-seg="${s}">${seg(s).nome}</button>`)).join("");
     $$("#abas button").forEach(b => b.addEventListener("click", () => {
       $$("#abas button").forEach(o => o.classList.remove("ativo"));
@@ -325,283 +197,81 @@
   }
 
   function desenharLista() {
-    const e = estado.etapa, linear = ehLinear();
-    const atuais = new Map(escolhasAtuais().map(x => [x.id, x.frentes]));
+    const e = estado.etapa;
     const busca = normal(estado.busca);
-    const todos = linear ? estado.ctx.todos : MOTOR.skusDaEtapa(e);
-    const lista = todos.filter(s => {
-      const cat = s.cat || s.seg;
+    const lista = estado.lista.filter(s => {
+      const cat = MOTOR.catDe(s);
       const okSeg = estado.filtro === "todos" || cat === estado.filtro;
       const okBusca = !busca || normal(s.nome).includes(busca) || normal(s.marca).includes(busca) || (s.ean || "").includes(busca);
       return okSeg && okBusca;
-    }).sort((a, b) => (a.cat || a.seg || "").localeCompare(b.cat || b.seg || "") || a.nome.localeCompare(b.nome));
+    });
     if (!lista.length) {
       $("#lista").innerHTML = `<p style="font-size:13px;color:var(--texto-suave)">Nenhum produto encontrado.</p>`;
       return;
     }
-    const restante = livreRestante();
+    const cheio = estado.marcados.length >= e.escolhas;
     $("#lista").innerHTML = lista.map(s => {
-      const cat = seg(s.cat || s.seg);
-      const cm = linear ? MOTOR.cmPorFrente(s) : null;
-      const cabe = !linear ? restante > 0 : cm <= restante;
-      const q = atuais.get(s.id) || 0;
-      return `<div class="item ${q ? "dentro" : ""} ${cabe ? "" : "nao-cabe"}" data-sku="${s.id}">
+      const cat = seg(MOTOR.catDe(s));
+      const marcado = estado.marcados.includes(s.id);
+      return `<label class="item ${marcado ? "dentro" : ""} ${!marcado && cheio ? "bloqueado" : ""}" data-sku="${s.id}">
         <img src="${s.arquivo}" alt="${s.nome}" draggable="false" loading="lazy">
         <div>
           <b>${s.nome}</b>
-          <small>${s.marca}${linear ? " · " + cm + " cm por frente" : ""}</small>
+          <small>${s.marca}</small>
           <span class="selo" style="background:${cat.cor}">${cat.nome}</span>
         </div>
-        <div class="marca-check">${q ? q + "x" : "+"}</div>
-      </div>`;
+        <span class="caixa">${marcado ? "✓" : ""}</span>
+      </label>`;
     }).join("");
-    $$("#lista .item").forEach(el => prepararArraste(el, { tipo: "lista", id: el.dataset.sku }));
+    $$("#lista .item").forEach(el => el.addEventListener("click", ev => {
+      ev.preventDefault();
+      alternar(el.dataset.sku);
+    }));
   }
 
-  function atualizarMedidores() {
-    const linear = ehLinear();
-    const restante = livreRestante();
-    $("#m-espacos").textContent = linear ? MOTOR.metros(restante) : restante;
-    const fat = faturamentoAtual();
-    const meta = linear ? estado.ctx.metaFaturamento : (MOTOR.avaliarEtapa(estado.etapa, escolhasAtuais(), estado.formato).meta || 1);
-    $("#m-faturamento").textContent = MOTOR.dinheiro(fat);
-    const pct = Math.round(fat / Math.max(1, meta) * 100);
-    $("#m-meta").textContent = pct + "% da meta";
-    $("#m-faturamento").classList.toggle("bom", pct >= 85);
+  function alternar(id) {
+    const e = estado.etapa;
+    const i = estado.marcados.indexOf(id);
+    if (i >= 0) estado.marcados.splice(i, 1);
+    else {
+      if (estado.marcados.length >= e.escolhas) {
+        aviso("Você já escolheu " + e.escolhas + " produtos. Desmarque um para trocar.");
+        return;
+      }
+      estado.marcados.push(id);
+    }
+    desenharLista();
+    atualizarContador();
+  }
+
+  function atualizarContador() {
+    const e = estado.etapa;
+    const n = estado.marcados.length;
+    $("#m-espacos").textContent = n + " / " + e.escolhas;
+    $("#contador").innerHTML = `<b>${n}</b><span>de ${e.escolhas}</span>`;
+    $("#contador").classList.toggle("completo", n === e.escolhas);
     const barra = $("#m-barra");
-    if (barra) barra.style.width = Math.min(100, pct) + "%";
-  }
-
-  /* ---------------- colocar e tirar ---------------- */
-  function colocar(id, indiceAlvo) {
-    const s = skuPorId(id);
-    if (!s) return;
-    if (ehLinear()) {
-      const cm = MOTOR.cmPorFrente(s);
-      const cabe = i => estado.slots[i] && estado.slots[i].tipo === "livre" && estado.slots[i].cm >= cm;
-      /* escolhe de onde tirar o espaco: o alvo do arraste, a lacuna ao lado do
-         bloco que ja tem esse produto, ou a maior lacuna livre */
-      let fonte = (indiceAlvo != null && cabe(indiceAlvo)) ? indiceAlvo : -1;
-      const bloco = estado.slots.findIndex(x => x.tipo === "item" && x.id === id);
-      if (fonte < 0 && bloco >= 0) {
-        if (cabe(bloco + 1)) fonte = bloco + 1;
-        else if (cabe(bloco - 1)) fonte = bloco - 1;
-      }
-      if (fonte < 0) {
-        let maior = -1;
-        estado.slots.forEach((x, i) => {
-          if (cabe(i) && (maior < 0 || x.cm > estado.slots[maior].cm)) maior = i;
-        });
-        fonte = maior;
-      }
-      if (fonte < 0) {
-        const total = livreRestante();
-        if (cm > total) { aviso(`${s.nome} precisa de ${cm} cm e só restam ${MOTOR.metros(total)}`); return; }
-        compactarLivres();
-        fonte = estado.slots.findIndex((x, i) => cabe(i));
-        if (fonte < 0) { aviso(`${s.nome} não cabe no espaço que restou`); return; }
-      }
-      const sobra = estado.slots[fonte].cm - cm;
-      const blocoAtual = estado.slots.findIndex(x => x.tipo === "item" && x.id === id);
-      const cap = capPrateleira();
-      const podeCrescer = i => {
-        const b = estado.slots[i];
-        return b && b.tipo === "item" && b.id === id &&
-          MOTOR.espacoCm(s, estado.formato, b.frentes + 1) <= cap;
-      };
-      if (blocoAtual >= 0 && indiceAlvo == null && podeCrescer(blocoAtual)) {
-        /* o produto se repete no bloco que ja existe e a lacuna encolhe */
-        const b = estado.slots[blocoAtual];
-        b.frentes += 1;
-        b.cm = MOTOR.espacoCm(s, estado.formato, b.frentes);
-        if (sobra >= 4) estado.slots[fonte] = { tipo: "livre", cm: sobra };
-        else estado.slots.splice(fonte, 1);
-      } else {
-        if (podeCrescer(fonte - 1)) {
-          const vizinho = estado.slots[fonte - 1];
-          vizinho.frentes += 1;
-          vizinho.cm = MOTOR.espacoCm(s, estado.formato, vizinho.frentes);
-          if (sobra >= 4) estado.slots[fonte] = { tipo: "livre", cm: sobra };
-          else estado.slots.splice(fonte, 1);
-        } else {
-          const novos = [{ tipo: "item", id, frentes: 1, cm }];
-          if (sobra >= 4) novos.push({ tipo: "livre", cm: sobra });
-          else if (sobra > 0) novos[0].cm += sobra;
-          estado.slots.splice(fonte, 1, ...novos);
-        }
-      }
-      normalizarLivres();
-    } else {
-      let alvo = indiceAlvo;
-      if (alvo == null || !estado.slots[alvo] || estado.slots[alvo].tipo !== "livre") {
-        alvo = estado.slots.findIndex(x => x.tipo === "livre");
-      }
-      if (alvo < 0) { aviso("Todas as vagas estão ocupadas. Tire alguma para trocar."); return; }
-      estado.slots[alvo] = { tipo: "item", id, frentes: 1 };
-    }
-    atualizar();
-  }
-
-  function tirarUmaFrente(indice) {
-    const slot = estado.slots[indice];
-    if (!slot || slot.tipo !== "item") return;
-    const s = skuPorId(slot.id);
-    if (ehLinear() && (slot.frentes || 1) > 1) {
-      const antes = slot.cm;
-      slot.frentes -= 1;
-      slot.cm = MOTOR.espacoCm(s, estado.formato, slot.frentes);
-      estado.slots.splice(indice + 1, 0, { tipo: "livre", cm: antes - slot.cm });
-    } else {
-      estado.slots[indice] = ehLinear() ? { tipo: "livre", cm: slot.cm } : { tipo: "livre" };
-    }
-    if (ehLinear()) juntarLivres();
-    atualizar();
-  }
-  function tirarBloco(indice) {
-    const slot = estado.slots[indice];
-    if (!slot || slot.tipo !== "item") return;
-    estado.slots[indice] = ehLinear() ? { tipo: "livre", cm: slot.cm } : { tipo: "livre" };
-    if (ehLinear()) juntarLivres();
-    atualizar();
-  }
-  function juntarLivres() {
-    for (let i = estado.slots.length - 1; i > 0; i--) {
-      if (estado.slots[i].tipo === "livre" && estado.slots[i - 1].tipo === "livre") {
-        estado.slots[i - 1].cm += estado.slots[i].cm;
-        estado.slots.splice(i, 1);
-      }
-    }
-    normalizarLivres();
-  }
-  function compactarLivres() {
-    const total = estado.slots.filter(x => x.tipo === "livre").reduce((t, x) => t + x.cm, 0);
-    estado.slots = estado.slots.filter(x => x.tipo !== "livre").concat(total > 0 ? [{ tipo: "livre", cm: total }] : []);
-    normalizarLivres();
-  }
-  function atualizar() { desenharPlano(); desenharLista(); atualizarMedidores(); }
-
-  /* ---------------- arrastar ---------------- */
-  let rolagem = null, ultimoPonteiro = 0;
-  function criarFantasma(sku, x, y) {
-    const f = document.createElement("div");
-    f.className = "fantasma";
-    f.innerHTML = `<img src="${sku.arquivo}" alt=""><span>${sku.nome}</span>`;
-    document.body.appendChild(f);
-    f.style.transform = `translate(${x}px, ${y}px)`;
-    return f;
-  }
-  const vaoSob = (x, y) => { const el = document.elementFromPoint(x, y); return el ? el.closest(".vao") : null; };
-  function rolarSeNaBorda(y) {
-    cancelAnimationFrame(rolagem);
-    const margem = 110; let passo = 0;
-    if (y < margem) passo = -Math.ceil((margem - y) / 6);
-    else if (y > window.innerHeight - margem) passo = Math.ceil((y - (window.innerHeight - margem)) / 6);
-    if (!passo) return;
-    const anda = () => { window.scrollBy(0, passo); rolagem = requestAnimationFrame(anda); };
-    rolagem = requestAnimationFrame(anda);
-  }
-
-  function prepararArraste(el, origem) {
-    el.addEventListener("pointerdown", ev => {
-      if (ev.button > 0) return;
-      const slot = origem.tipo === "slot" ? estado.slots[origem.index] : null;
-      const id = origem.tipo === "slot" ? (slot || {}).id : origem.id;
-      if (!id) return;
-      const sku = skuPorId(id);
-      if (!sku) return;
-      const inicio = { x: ev.clientX, y: ev.clientY };
-      let ativo = false, fantasma = null;
-
-      const mover = e => {
-        if (!ativo && Math.hypot(e.clientX - inicio.x, e.clientY - inicio.y) < 9) return;
-        if (!ativo) {
-          ativo = true;
-          fantasma = criarFantasma(sku, e.clientX, e.clientY);
-          document.body.classList.add("arrastando");
-          const sel = window.getSelection();
-          if (sel && sel.removeAllRanges) sel.removeAllRanges();
-          if (origem.tipo === "slot") el.style.opacity = ".35";
-        }
-        fantasma.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-        fantasma.style.visibility = "hidden";
-        const alvo = vaoSob(e.clientX, e.clientY);
-        fantasma.style.visibility = "visible";
-        $$("#prateleiras .vao").forEach(v => {
-          const sl = estado.slots[Number(v.dataset.slot)];
-          const serve = v === alvo && sl && sl.tipo === "livre" &&
-            (!ehLinear() || sl.cm >= MOTOR.cmPorFrente(sku));
-          v.classList.toggle("sobre", !!serve);
-          v.classList.toggle("nao-serve", v === alvo && !serve && sl && sl.tipo === "livre");
-        });
-        rolarSeNaBorda(e.clientY);
-        e.preventDefault();
-      };
-
-      const soltar = e => {
-        window.removeEventListener("pointermove", mover);
-        window.removeEventListener("pointerup", soltar);
-        window.removeEventListener("pointercancel", soltar);
-        cancelAnimationFrame(rolagem);
-        document.body.classList.remove("arrastando");
-        $$("#prateleiras .vao").forEach(v => v.classList.remove("sobre", "nao-serve"));
-        if (fantasma) fantasma.remove();
-        el.style.opacity = "";
-        if (!ativo) {
-          if (origem.tipo === "lista") colocar(id, null); else tirarUmaFrente(origem.index);
-        } else {
-          const alvo = vaoSob(e.clientX, e.clientY);
-          if (alvo) {
-            const destino = Number(alvo.dataset.slot);
-            const sl = estado.slots[destino];
-            if (origem.tipo === "lista") colocar(id, destino);
-            else if (destino !== origem.index) { tirarBloco(origem.index); colocar(id, null); }
-          } else if (origem.tipo === "slot") {
-            tirarBloco(origem.index);
-            aviso(sku.nome + " saiu da gôndola");
-          }
-        }
-        ultimoPonteiro = Date.now();
-      };
-      window.addEventListener("pointermove", mover, { passive: false });
-      window.addEventListener("pointerup", soltar);
-      window.addEventListener("pointercancel", soltar);
-    });
-    el.addEventListener("click", () => {
-      if (Date.now() - ultimoPonteiro < 700) return;
-      if (origem.tipo === "lista") colocar(origem.id, null); else tirarUmaFrente(origem.index);
-    });
-    el.addEventListener("dragstart", e => e.preventDefault());
+    if (barra) barra.style.width = (n / e.escolhas * 100) + "%";
+    $("#btn-confirmar").classList.toggle("pronto", n === e.escolhas);
   }
 
   $("#busca").addEventListener("input", e => { estado.busca = e.target.value; desenharLista(); });
-
-  $("#btn-esvaziar").addEventListener("click", () => {
-    if (!estado.slots.some(s => s.tipo === "item")) return;
-    if (!confirm("Tirar tudo da gôndola e montar do zero? O relógio não para.")) return;
-    if (ehLinear()) {
-      estado.slots = [{ tipo: "livre", cm: estado.ctx.cmTotal }];
-      normalizarLivres();
-    } else {
-      estado.slots = estado.slots.map(() => ({ tipo: "livre" }));
-    }
-    atualizar();
-    aviso("Gôndola vazia. Agora é montar do seu jeito.");
+  $("#btn-limpar").addEventListener("click", () => {
+    if (!estado.marcados.length) return;
+    estado.marcados = [];
+    desenharLista(); atualizarContador();
   });
 
   /* ---------------- confirmar ---------------- */
   $("#btn-confirmar").addEventListener("click", () => {
     const e = estado.etapa;
-    const resta = livreRestante();
-    const vazio = ehLinear() ? resta > 12 : resta > 0;
-    const texto = ehLinear()
-      ? `Ainda sobram ${MOTOR.metros(resta)} de gôndola vazios, e gôndola vazia não fatura. Confirmar assim mesmo?`
-      : `Ainda faltam ${resta} vagas. Confirmar assim mesmo?`;
-    if (vazio && !confirm(texto)) return;
+    const faltam = e.escolhas - estado.marcados.length;
+    if (faltam > 0 && !confirm(`Você ainda pode incluir ${faltam} ${faltam === 1 ? "produto" : "produtos"}. Confirmar assim mesmo?`)) return;
     clearInterval(estado.cronometro);
     const gastos = Math.max(1, Math.floor((Date.now() - estado.inicio) / 1000));
     estado.tempos[e.id] = gastos;
     estado.tempos.acumulado = (estado.tempos.acumulado || 0) + gastos;
-    estado.escolhas[e.id] = escolhasAtuais();
+    estado.escolhas[e.id] = estado.marcados.slice();
     if (estado.etapaIdx < ETAPAS.length - 1) { estado.etapaIdx++; abrirAvisoEtapa(); }
     else finalizar();
   });
@@ -613,6 +283,9 @@
     const nota = MOTOR.pontuar(resultados, segundos);
     estado.resultado = { resultados, nota };
     const fmt = FORMATOS.find(f => f.id === estado.formato);
+    const incremento = resultados.reduce((t, r) => t + r.incremento, 0);
+    const tetoTotal = resultados.reduce((t, r) => t + r.teto, 0);
+
     const registro = Object.assign({}, estado.participante, {
       status: "concluido",
       formato: estado.formato,
@@ -620,19 +293,17 @@
       pontuacao: nota.total,
       nivel: nota.nivel,
       segundos,
-      faturamento: resultados[0] ? resultados[0].faturamento : 0,
-      meta: resultados[0] ? resultados[0].meta : 0,
+      incremento, tetoIncremento: tetoTotal,
       temposEtapas: ETAPAS.reduce((o, e) => (o[e.id] = estado.tempos[e.id] || 0, o), {}),
       blocos: nota.blocos.reduce((o, b) => (o[b.chave] = b.pontos, o), {}),
-      sorteioInicial: estado.sorteioInicial,
       etapas: resultados.map(r => ({
         etapa: r.etapa.id,
-        escolhidos: r.blocos.map(b => b.sku.nome + (b.frentes > 1 ? " (" + b.frentes + " frentes)" : "")),
-        faturamento: r.faturamento, meta: r.meta,
-        aproveitamento: Math.round(r.aproveitamento * 100),
-        aderencia: Math.round(r.aderencia * 100),
-        perdidos: r.perdidos.slice(0, 8).map(p => p.sku.nome),
-        foraDoPlano: r.foraDoPlano.map(b => b.sku.nome)
+        escolhidos: r.escolhidos.map(s => s.nome),
+        incremento: r.incremento, teto: r.teto,
+        acertos: r.acertos.length,
+        perdidos: r.perdidos.map(s => s.nome),
+        foraDoPlano: r.foraDoPlano.map(s => s.nome),
+        categorias: r.categorias
       }))
     });
     estado.participante = await STORE.salvar(registro);
@@ -643,18 +314,18 @@
   function montarResultado() {
     const { resultados, nota } = estado.resultado;
     const fmt = FORMATOS.find(f => f.id === estado.formato);
-    const r1 = resultados[0];
+    const incremento = resultados.reduce((t, r) => t + r.incremento, 0);
+    const teto = resultados.reduce((t, r) => t + r.teto, 0);
     $("#res-nome").textContent = estado.participante.nome +
       (estado.participante.empresa ? " | " + estado.participante.empresa : "") +
       (fmt ? " | " + fmt.nome : "");
     $("#res-pontos").innerHTML = nota.total + "<small>/1000</small>";
     $("#res-nivel").textContent = nota.nivel;
-    $("#res-financeiro").innerHTML = r1
-      ? `<div class="fat-bloco"><span>Sua gôndola fatura</span><b>${MOTOR.dinheiro(r1.faturamento)}</b></div>
-         <div class="fat-seta">→</div>
-         <div class="fat-bloco"><span>Modelo da companhia</span><b>${MOTOR.dinheiro(r1.meta)}</b></div>
-         <div class="fat-bloco destaque"><span>Você chegou a</span><b>${Math.round(r1.faturamento / Math.max(1, r1.meta) * 100)}%</b></div>`
-      : "";
+    $("#res-financeiro").innerHTML = `
+      <div class="fat-bloco"><span>Seu mix adiciona</span><b>${MOTOR.dinheiro(incremento)}</b></div>
+      <div class="fat-seta">→</div>
+      <div class="fat-bloco"><span>Melhor escolha possível</span><b>${MOTOR.dinheiro(teto)}</b></div>
+      <div class="fat-bloco destaque"><span>Você capturou</span><b>${Math.round(incremento / Math.max(1, teto) * 100)}%</b></div>`;
 
     $("#res-blocos").innerHTML = nota.blocos.map(b => `
       <div class="bloco">
@@ -665,38 +336,33 @@
       </div>`).join("");
 
     $("#res-etapas").innerHTML = resultados.map(r => {
-      const linear = r.modo === "linear";
       const fid = estado.formato;
-      const linha = (sku, frentes, classe, extra, valor) => `
+      const linha = (s, classe, extra) => `
         <div class="linha-item ${classe}">
-          <img src="${sku.arquivo}" alt="">
-          <div><b>${sku.nome}${frentes > 1 ? " · " + frentes + " frentes" : ""}</b><small>${extra}</small></div>
-          <div class="valor">${valor}</div>
+          <img src="${s.arquivo}" alt="">
+          <div><b>${s.nome}</b><small>${extra}</small></div>
+          <div class="valor">${MOTOR.dinheiro(MOTOR.potencial(s, fid))}</div>
         </div>`;
-      const bons = r.acertos.slice(0, 4).map(b => linha(b.sku, b.frentes, "ok",
-        linear ? seg(b.sku.cat).nome + " · " + MOTOR.espacoCm(b.sku, fid, b.frentes) + " cm"
-               : (b.sku.motivo || ""),
-        linear ? MOTOR.dinheiro(MOTOR.giroDoBloco(b.sku, fid, b.frentes)) : "+" + b.sku.valor)).join("")
-        || `<p style="font-size:13px;color:var(--texto-suave)">Nenhum item do plano entrou na sua gôndola.</p>`;
-      const faltou = r.perdidos.slice(0, 4).map(p => linha(p.sku, p.frentes, "falta",
-        linear ? "Rende " + MOTOR.dinheiro(MOTOR.giroPorFrente(p.sku, fid)) + " por frente em " + MOTOR.cmPorFrente(p.sku) + " cm"
-               : (p.sku.motivo || "Item de alta incrementalidade"),
-        linear ? MOTOR.dinheiro(MOTOR.giroDoBloco(p.sku, fid, p.frentes)) : "+" + p.sku.valor)).join("")
-        || `<p style="font-size:13px;color:var(--texto-suave)">Você levou tudo o que o modelo recomenda.</p>`;
-      const fora = (r.foraDoPlano || []).slice(0, 3).map(b => linha(b.sku, b.frentes, "falta",
-        "Não faz parte do plano deste formato", MOTOR.espacoCm(b.sku, fid, b.frentes) + " cm")).join("");
+      const bons = r.acertos.slice(0, 4).map(s => linha(s, "ok",
+        seg(MOTOR.catDe(s)).nome + " · margem " + MOTOR.margem(s).toFixed(1))).join("")
+        || `<p style="font-size:13px;color:var(--texto-suave)">Nenhuma das escolhas estava entre as de maior potencial.</p>`;
+      const faltou = r.perdidos.slice(0, 4).map(s => linha(s, "falta",
+        seg(MOTOR.catDe(s)).nome + " · era uma das maiores oportunidades desta loja")).join("")
+        || `<p style="font-size:13px;color:var(--texto-suave)">Você pegou todas as maiores oportunidades.</p>`;
+      const fora = (r.foraDoPlano || []).slice(0, 3).map(s => linha(s, "falta",
+        "Gira em outro formato de loja, não neste")).join("");
       return `
       <div class="cartao">
         <h3>Etapa ${r.etapa.numero} | ${r.etapa.nome}</h3>
-        <p class="sub">${linear
-          ? `${MOTOR.dinheiro(r.faturamento)} de faturamento projetado, ${Math.round(r.aproveitamento * 100)}% do melhor resultado possível, ${r.itens} SKUs em ${r.frentes} frentes, ${MOTOR.metros(r.espacoUsado)} de ${MOTOR.metros(r.espacoTotal)} ocupados.`
-          : `${r.itens} SKUs escolhidos, ${Math.round(r.aproveitamento * 100)}% do potencial.`}
+        <p class="sub">${r.itens} ${r.itens === 1 ? "produto incluído" : "produtos incluídos"},
+          ${MOTOR.dinheiro(r.incremento)} de potencial adicional,
+          ${r.categorias.length} ${r.categorias.length === 1 ? "categoria" : "categorias"} cobertas.
           Tempo: ${MOTOR.formatarTempo(estado.tempos[r.etapa.id] || 0)}.</p>
-        <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--verde);margin:0 0 8px">O que mais fatura na sua gôndola</h4>
+        <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--verde);margin:0 0 8px">Escolhas que mais somam</h4>
         ${bons}
-        <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--vermelho);margin:16px 0 8px">O que o modelo tinha e você deixou passar</h4>
+        <h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--vermelho);margin:16px 0 8px">Oportunidades que ficaram de fora</h4>
         ${faltou}
-        ${fora ? `<h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--texto-suave);margin:16px 0 8px">Fora do plano deste formato</h4>${fora}` : ""}
+        ${fora ? `<h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--texto-suave);margin:16px 0 8px">Não é o sortimento desta loja</h4>${fora}` : ""}
       </div>`;
     }).join("");
 
@@ -720,14 +386,14 @@
           <span class="pts">${r.pontuacao} pts</span>
         </div>`).join("") : "";
       $("#res-ranking").innerHTML = `
-        <thead><tr><th>#</th><th>Participante</th><th>Empresa</th><th>Loja</th><th>Faturamento</th><th>Tempo</th><th>Pontos</th></tr></thead>
+        <thead><tr><th>#</th><th>Participante</th><th>Empresa</th><th>Loja</th><th>Incremento</th><th>Tempo</th><th>Pontos</th></tr></thead>
         <tbody>${lista.slice(0, 10).map((r, i) => `
           <tr class="${r.id === estado.participante.id ? "eu" : ""}">
             <td class="pos ${i < 3 ? "podio-" + (i + 1) : ""}">${i + 1}</td>
             <td>${(r.nome || "").split(" ").slice(0, 2).join(" ")}</td>
             <td>${r.empresa || ""}</td>
             <td>${r.formatoNome || ""}</td>
-            <td>${r.faturamento ? MOTOR.dinheiro(r.faturamento) : ""}</td>
+            <td>${r.incremento ? MOTOR.dinheiro(r.incremento) : ""}</td>
             <td>${MOTOR.formatarTempo(r.segundos || 0)}</td>
             <td><b>${r.pontuacao}</b></td>
           </tr>`).join("")}</tbody>`;
@@ -737,7 +403,7 @@
   $("#btn-proximo").addEventListener("click", () => {
     if (estado.desligarRanking) { estado.desligarRanking(); estado.desligarRanking = null; }
     estado.participante = null; estado.formato = null;
-    estado.etapaIdx = 0; estado.escolhas = {}; estado.tempos = {}; estado.sorteioInicial = {};
+    estado.etapaIdx = 0; estado.escolhas = {}; estado.tempos = {}; estado.marcados = [];
     $("#form-cadastro").reset();
     $$(".erro").forEach(e => e.textContent = "");
     $("#btn-confirmar-formato").disabled = true;

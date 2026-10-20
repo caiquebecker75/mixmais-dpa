@@ -1,9 +1,15 @@
 /* ==========================================================================
    MIX+ DPA | formatos de loja, etapas e pesos
    --------------------------------------------------------------------------
-   Os quatro formatos vêm das quatro abas do simulador da cliente
-   (BASE_SIMULADOR.xlsx): SUPERMERCADO, HIPER_MINIMO, HIPER_TOTAL e CASH.
-   Gôndola, espaço linear, frentes e giro são os números dela.
+   A atividade e de visao comercial, nao de execucao de gondola: a loja ja tem
+   o sortimento de maior volume e o participante decide o que acrescentaria
+   para vender mais. Os quatro formatos vem das quatro abas do simulador da
+   cliente (BASE_SIMULADOR.xlsx).
+
+   AJUSTAR QUANDO A DANI ENVIAR A LISTA DEFINITIVA:
+   - escolhas  : quantos SKUs o participante pode marcar em cada etapa
+   - opcoes    : tamanho da lista de produtos incrementais
+   - PESOS     : como os pontos sao distribuidos
    ========================================================================== */
 
 /* Categorias do simulador da cliente */
@@ -28,38 +34,30 @@ window.SEGMENTOS = {
   especiais:   { nome: "Italianos",       cor: "#8B5CF6" }
 };
 
-/* Quanto da gôndola já vem montada no sorteio do início da rodada.
-   O sorteio muda a cada partida: ninguém recebe a mesma sugestão.            */
-window.FRACAO_INICIAL = 0.5;
-
 window.FORMATOS = [
   {
     id: "supermercado",
     nome: "Supermercado",
-    resumo: "Gôndola de 7,3 m de refrigerados",
-    detalhe: "Loja de bairro com uma gôndola de iogurtes. Espaço curto, sortimento tem que ser certeiro.",
-    prateleiras: 6
+    resumo: "Loja de bairro",
+    detalhe: "Compra de reposição da família, tíquete médio e giro semanal."
   },
   {
     id: "cash",
     nome: "Cash and carry",
-    resumo: "Gôndola de 9,8 m",
-    detalhe: "Atacarejo: formato família, pack grande e preço por quilo mandam na escolha.",
-    prateleiras: 7
+    resumo: "Atacarejo",
+    detalhe: "Formato família e pack grande, com transformador e consumidor final no mesmo corredor."
   },
   {
     id: "hiper_minimo",
     nome: "Hiper, sortimento mínimo",
-    resumo: "Seção de 43 m, sortimento enxuto",
-    detalhe: "O plano mínimo que o hiper precisa ter de pé antes de abrir espaço para a cauda.",
-    prateleiras: 12
+    resumo: "Hipermercado enxuto",
+    detalhe: "O hiper que ainda trabalha o essencial da categoria e tem espaço para crescer."
   },
   {
     id: "hiper_total",
     nome: "Hiper, sortimento completo",
-    resumo: "Seção de 43 m, portfólio inteiro",
-    detalhe: "O hiper que compra a categoria toda: é onde a cauda longa se paga.",
-    prateleiras: 13
+    resumo: "Hipermercado completo",
+    detalhe: "Loja que compra a categoria inteira: é onde a cauda longa e o item premium se pagam."
   }
 ];
 
@@ -69,37 +67,33 @@ window.ETAPAS = [
     numero: 1,
     nome: "Iogurtes",
     marca: "DPA",
-    modoEspaco: "linear",
-    titulo: "A loja já tem meia gôndola montada",
-    resumo: "Metade do espaço veio preenchido, e vem diferente a cada rodada. Tire o que não se paga e coloque o que rende mais.",
-    instrucao: "Toque para somar uma frente, toque no produto exposto para tirar uma. Cada frente ocupa a largura real da embalagem e soma faturamento.",
-    tituloPlano: "Gôndola de iogurtes",
-    prateleiras: 5,
-    fonte: "SKUS_DPA"
+    fonte: "SKUS_DPA",
+    escolhas: 10,     /* quantos SKUs o participante marca */
+    opcoes: 30,       /* tamanho da lista de incrementais */
+    titulo: "O que você acrescentaria a esta loja?",
+    resumo: "A loja já trabalha os SKUs de maior volume. Agora é a sua leitura comercial: o que entra para vender mais?",
+    instrucao: "Marque os produtos que você incluiria no sortimento desta loja."
   },
   {
     id: "galbani",
     numero: 2,
     nome: "Galbani",
     marca: "Galbani",
-    modoEspaco: "vagas",
-    titulo: "Agora o bloco Galbani",
-    resumo: "Metade das vagas já veio preenchida por sorteio. Troque o que não vale a pena.",
-    instrucao: "Toque para ocupar uma vaga, toque no produto exposto para liberar. Pode repetir o mesmo item para dar mais espaço a ele.",
-    tituloPlano: "Gôndola Galbani",
-    colunas: 5,
-    vazios: 10,
-    segmentosPrioritarios: ["fatiados", "crema", "aperitivo", "especiais"],
-    fonte: "SKUS_GALBANI"
+    fonte: "SKUS_GALBANI",
+    escolhas: 8,
+    opcoes: 19,
+    titulo: "Agora o sortimento Galbani",
+    resumo: "Os queijos de maior volume já estão na loja. Escolha o que completa o sortimento italiano.",
+    instrucao: "Marque os produtos Galbani que você incluiria nesta loja."
   }
 ];
 
-/* Pontuacao: resultado financeiro + aderencia ao modelo + tempo = 1000.
-   O modelo ideal e o planograma da planilha da DPA.                          */
+/* Pontuacao: potencial de venda + margem + cobertura + tempo = 1000 */
 window.PESOS = {
-  resultado: 650,
-  aderencia: 150,
+  venda: 550,
+  margem: 150,
+  cobertura: 100,
   tempo: 200,
-  tempoAlvo: 240,   /* ate aqui o bonus de tempo e cheio */
-  tempoLimite: 840  /* daqui para frente zera */
+  tempoAlvo: 180,   /* ate aqui o bonus de tempo e cheio */
+  tempoLimite: 600  /* daqui para frente zera */
 };

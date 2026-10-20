@@ -15,12 +15,12 @@
     <div class="abertura-conteudo">
       <div class="marca claro g"><span class="mix"><b>MIX</b><i>+</i></span><span class="dpa">DPA</span></div>
       <h1>Como o MIX pode <em>potencializar suas vendas?</em></h1>
-      <p class="chamada">O básico da gôndola já está montado. O desafio é decidir quais itens incrementais entram nos espaços que sobraram, em duas etapas: iogurtes e Galbani.</p>
+      <p class="chamada">A loja já trabalha os produtos de maior volume. O desafio é de visão comercial: o que você acrescentaria ao sortimento dela para vender mais? Duas etapas, iogurtes e Galbani.</p>
 
       <div class="como-funciona">
         <div class="como-item"><span>1</span><p>Faça seu cadastro</p></div>
         <div class="como-item"><span>2</span><p>Participe das duas etapas</p></div>
-        <div class="como-item"><span>3</span><p>Monte seu MIX seguindo as regras</p></div>
+        <div class="como-item"><span>3</span><p>Escolha os produtos que incluiria</p></div>
         <div class="como-item"><span>4</span><p>Quem montar a melhor estratégia de MIX vence</p></div>
       </div>
 
@@ -104,7 +104,7 @@
   <div class="miolo"><div class="limite">
     <span class="tarja">Antes de começar</span>
     <h2 class="titulo">Qual loja você vai executar?</h2>
-    <p class="apoio">Cada formato tem a gôndola, o sortimento e o espaço linear do simulador da DPA. O sortimento que faz 80% do faturamento já vem posicionado.</p>
+    <p class="apoio">Cada formato de loja tem o próprio sortimento e o próprio potencial, direto do simulador da DPA. Os produtos de maior volume já estão garantidos na loja.</p>
     <div class="formatos" id="lista-formatos"></div>
     <div style="margin-top:26px;text-align:center">
       <button class="btn azul" id="btn-confirmar-formato" disabled>Começar a atividade</button>
@@ -133,49 +133,43 @@
   </div>
 </section>
 
-<!-- ============================ JOGO ============================ -->
+<!-- ============================ SELEÇÃO ============================ -->
 <section class="tela" id="tela-jogo">
   <div class="barra"><div class="limite">
     <div class="medidores">
       <div class="marca claro p"><span class="mix"><b>MIX</b><i>+</i></span><span class="dpa">DPA</span></div>
       <div class="medidor"><b id="m-etapa">Etapa 1</b><span id="m-etapa-nome">Iogurtes</span></div>
-      <div class="medidor destaque"><b id="m-espacos">0</b><span id="rotulo-espaco">Espaço livre</span></div>
-      <div class="medidor dinheiro">
-        <b id="m-faturamento">R$ 0</b>
-        <span id="m-meta">0% da meta</span>
+      <div class="medidor destaque"><b id="m-espacos">0 / 0</b><span id="rotulo-espaco">Produtos escolhidos</span>
         <div class="trilho-meta"><i id="m-barra"></i></div>
       </div>
-      <div class="medidor"><b id="m-tempo">00:00</b><span>Tempo de montagem</span></div>
+      <div class="medidor"><b id="m-tempo">00:00</b><span>Tempo de decisão</span></div>
     </div>
     <div class="acoes-barra">
-      <button class="btn pequeno linha claro" id="btn-esvaziar">Esvaziar gôndola</button>
+      <button class="btn pequeno linha claro" id="btn-limpar">Limpar seleção</button>
       <button class="btn pequeno" id="btn-confirmar">Confirmar etapa</button>
     </div>
   </div></div>
 
   <div class="limite">
     <div class="arena">
-      <div class="planograma">
-        <div class="planograma-cabecalho">
-          <h3 id="plano-titulo">Gôndola</h3>
-          <div class="legenda-plano">
-            <span><i style="background:#FFFDF6;border:1px solid #F5B02A"></i>Produto na gôndola, toque para tirar uma frente</span>
-            <span><i style="background:#EAF2FD;border:1px dashed #2E79D6"></i>Espaço livre</span>
-          </div>
-        </div>
-        <div id="prateleiras"></div>
-        <p style="font-size:12px;color:var(--texto-suave);margin:12px 0 0" id="dica-plano">
-          Arraste o produto da lista até um espaço livre, ou toque nele para ocupar o próximo espaço. Toque em um item que você escolheu para devolvê-lo à lista.
-        </p>
-      </div>
+      <aside class="ja-na-loja">
+        <h3 id="plano-titulo">A loja já trabalha</h3>
+        <p class="sub" id="plano-sub"></p>
+        <div class="grade-fixos" id="fixos"></div>
+      </aside>
 
-      <aside class="catalogo">
-        <h3>Itens incrementais</h3>
-        <p class="dica" id="catalogo-dica"></p>
+      <section class="escolha">
+        <div class="escolha-cabecalho">
+          <div>
+            <h3 id="titulo-escolha">Escolha os produtos que você incluiria</h3>
+            <p class="dica" id="catalogo-dica"></p>
+          </div>
+          <div class="contador" id="contador"><b>0</b><span>de 0</span></div>
+        </div>
         <div class="busca"><input type="search" id="busca" placeholder="Buscar produto"></div>
         <div class="abas" id="abas"></div>
         <div class="lista" id="lista"></div>
-      </aside>
+      </section>
     </div>
   </div>
 </section>
@@ -208,7 +202,7 @@
     </div>
 
     <p class="rodape">
-      Etapa de iogurtes: EAN, categoria, giro, margem, frentes e espaço linear saem da base do simulador da DPA.<br>
+      Etapa de iogurtes: EAN, categoria, potencial de venda e margem saem da base do simulador da DPA.<br>
       Packshots de aiogurteria.com.br, chamyto.com.br, chambinho.com.br e galbani.com.br. A linha Chandelle usa cartão provisório até o cliente enviar os arquivos.<br>
       Experiência criada pela 75 LAB.
     </p>
