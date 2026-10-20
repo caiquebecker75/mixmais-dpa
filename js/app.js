@@ -247,12 +247,28 @@
   function atualizarContador() {
     const e = estado.etapa;
     const n = estado.marcados.length;
+    const ultima = estado.etapaIdx === ETAPAS.length - 1;
     $("#m-espacos").textContent = n + " / " + e.escolhas;
     $("#contador").innerHTML = `<b>${n}</b><span>de ${e.escolhas}</span>`;
     $("#contador").classList.toggle("completo", n === e.escolhas);
     const barra = $("#m-barra");
     if (barra) barra.style.width = (n / e.escolhas * 100) + "%";
-    $("#btn-confirmar").classList.toggle("pronto", n === e.escolhas);
+
+    /* barra de ação: as bolinhas mostram o que já foi escolhido */
+    $("#bolinhas").innerHTML = Array.from({ length: e.escolhas }, (_, i) =>
+      `<i class="${i < n ? "cheia" : ""}"></i>`).join("");
+    $("#texto-selecao").textContent = n === 0
+      ? "Escolha até " + e.escolhas + " produtos"
+      : n + " de " + e.escolhas + (n === 1 ? " produto escolhido" : " produtos escolhidos");
+    $("#texto-apoio").textContent = n === e.escolhas
+      ? "Seleção completa. Pode seguir."
+      : n === 0 ? "Marque os que você incluiria nesta loja"
+      : "Ainda dá para incluir " + (e.escolhas - n);
+    const btn = $("#btn-continuar");
+    btn.textContent = ultima ? "Ver meu resultado" : "Continuar para a etapa " + (e.numero + 1);
+    btn.classList.toggle("pronto", n === e.escolhas);
+    btn.classList.toggle("apagado", n === 0);
+    document.body.classList.toggle("com-barra-acao", true);
   }
 
   $("#busca").addEventListener("input", e => { estado.busca = e.target.value; desenharLista(); });
@@ -263,7 +279,7 @@
   });
 
   /* ---------------- confirmar ---------------- */
-  $("#btn-confirmar").addEventListener("click", () => {
+  function confirmarEtapa() {
     const e = estado.etapa;
     const faltam = e.escolhas - estado.marcados.length;
     if (faltam > 0 && !confirm(`Você ainda pode incluir ${faltam} ${faltam === 1 ? "produto" : "produtos"}. Confirmar assim mesmo?`)) return;
@@ -272,9 +288,12 @@
     estado.tempos[e.id] = gastos;
     estado.tempos.acumulado = (estado.tempos.acumulado || 0) + gastos;
     estado.escolhas[e.id] = estado.marcados.slice();
+    document.body.classList.remove("com-barra-acao");
     if (estado.etapaIdx < ETAPAS.length - 1) { estado.etapaIdx++; abrirAvisoEtapa(); }
     else finalizar();
-  });
+  }
+  $("#btn-confirmar").addEventListener("click", confirmarEtapa);
+  $("#btn-continuar").addEventListener("click", confirmarEtapa);
 
   /* ---------------- resultado ---------------- */
   async function finalizar() {
@@ -377,27 +396,47 @@
       $("#res-ranking-sub").textContent = STORE.aoVivo
         ? "Atualiza sozinho conforme os outros tablets terminam."
         : "Ranking deste tablet. Para juntar todos, ligue o Firebase em config.js.";
-      const podio = lista.slice(0, 3);
-      $("#res-podio").innerHTML = podio.length > 1 ? podio.map((r, i) => `
-        <div class="podio-card lugar-${i + 1} ${r.id === estado.participante.id ? "eu" : ""}">
-          <span class="medalha">${["1º", "2º", "3º"][i]}</span>
-          <b>${(r.nome || "").split(" ").slice(0, 2).join(" ")}</b>
-          <small>${r.empresa || ""}</small>
-          <span class="pts">${r.pontuacao} pts</span>
-        </div>`).join("") : "";
-      $("#res-ranking").innerHTML = `
-        <thead><tr><th>#</th><th>Participante</th><th>Empresa</th><th>Loja</th><th>Incremento</th><th>Tempo</th><th>Pontos</th></tr></thead>
-        <tbody>${lista.slice(0, 10).map((r, i) => `
-          <tr class="${r.id === estado.participante.id ? "eu" : ""}">
-            <td class="pos ${i < 3 ? "podio-" + (i + 1) : ""}">${i + 1}</td>
-            <td>${(r.nome || "").split(" ").slice(0, 2).join(" ")}</td>
-            <td>${r.empresa || ""}</td>
-            <td>${r.formatoNome || ""}</td>
-            <td>${r.incremento ? MOTOR.dinheiro(r.incremento) : ""}</td>
-            <td>${MOTOR.formatarTempo(r.segundos || 0)}</td>
-            <td><b>${r.pontuacao}</b></td>
-          </tr>`).join("")}</tbody>`;
+      desenharRanking(lista);
     }).then(off => { estado.desligarRanking = off; });
+  }
+
+  const iniciais = nome => (nome || "").trim().split(/\s+/).slice(0, 2).map(p => p[0] || "").join("").toUpperCase();
+  const primeiroNome = nome => (nome || "").split(" ").slice(0, 2).join(" ");
+
+  function desenharRanking(lista) {
+    const eu = estado.participante.id;
+    const podio = lista.slice(0, 3);
+    const ordemVisual = [1, 0, 2];   /* 2º, 1º, 3º, como num pódio de verdade */
+    const alturas = { 0: 122, 1: 92, 2: 72 };
+    $("#res-podio").innerHTML = podio.length > 1 ? ordemVisual.filter(i => podio[i]).map(i => {
+      const r = podio[i];
+      return `<div class="lugar l${i + 1} ${r.id === eu ? "eu" : ""}">
+        ${i === 0 ? '<span class="coroa">★</span>' : ""}
+        <span class="aval">${iniciais(r.nome)}</span>
+        <b>${primeiroNome(r.nome)}</b>
+        <small>${r.empresa || ""}</small>
+        <div class="degrau" style="height:${alturas[i]}px">
+          <span class="num">${i + 1}º</span>
+          <em>${r.pontuacao}</em>
+        </div>
+      </div>`;
+    }).join("") : "";
+
+    const maior = lista.length ? lista[0].pontuacao : 1000;
+    $("#res-ranking").innerHTML = lista.slice(0, 10).map((r, i) => `
+      <div class="linha-rank ${r.id === eu ? "eu" : ""}">
+        <span class="pos ${i < 3 ? "medalha-" + (i + 1) : ""}">${i + 1}</span>
+        <span class="aval">${iniciais(r.nome)}</span>
+        <div class="quem">
+          <b>${primeiroNome(r.nome)}${r.id === eu ? " <i>você</i>" : ""}</b>
+          <small>${[r.empresa, r.formatoNome].filter(Boolean).join(" · ")}</small>
+        </div>
+        <div class="trilho"><i style="width:${Math.max(6, r.pontuacao / Math.max(1, maior) * 100)}%"></i></div>
+        <div class="dados">
+          <b>${r.pontuacao}</b>
+          <small>${r.incremento ? MOTOR.dinheiro(r.incremento) : ""} · ${MOTOR.formatarTempo(r.segundos || 0)}</small>
+        </div>
+      </div>`).join("");
   }
 
   $("#btn-proximo").addEventListener("click", () => {
