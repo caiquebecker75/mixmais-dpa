@@ -410,12 +410,18 @@
     $("#h-missao-n").textContent = `MISSÃO ${m.numero}/2`;
     $("#h-missao").textContent = m.nome;
     $("#h-fixos").textContent = m.fixos.length;
+    $("#fixos-txt").textContent = m.fixos.length ? `${m.fixos.length} SKUs obrigatórios já no avião` : "";
+    $("#fixos-lista").innerHTML = "";
     $("#h-travados").textContent = "0";
     $("#radar").innerHTML = m.alvos.map((a, i) => `<i class="pip" data-i="${i}"></i>`).join("");
     $("#opcoes").innerHTML = ""; $("#sonar-selo").innerHTML = "";
     $("#alvo-nome").textContent = m.titulo; $("#alvo-ordem").innerHTML = "Preparar"; $("#alvo-apoio").textContent = "carga fixa embarcando"; $("#alvo-miras").innerHTML = "";
     SONAR.novosContatos(0);
     await embarque(m);
+    $("#fixos-lista").innerHTML = m.fixos.length
+      ? m.fixos.map((f, i) => `<span class="fx" data-n="${esc(M.sku(f.e).n)}" style="--d:${i * 25}ms">${imgSku(f.e)}</span>`).join("")
+      : `<p class="fixos-vazio">Sem carga fixa neste canal: todo o mix desta missão depende das suas escolhas.</p>`;
+    SONAR.medir(); ajustarGrade();
     SOM.cabine(true);
     mostrarAlvo();
     rodar();
@@ -521,6 +527,8 @@
   }
 
   $("#b-disparar").addEventListener("click", disparar);
+  /* toque num item da carga fixa mostra o nome */
+  $("#fixos-lista").addEventListener("click", e => { const fx = e.target.closest(".fx"); if (fx) aviso("Fixo: " + fx.dataset.n); });
 
   async function disparar() {
     const m = missao(), a = alvo();
