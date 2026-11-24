@@ -44,6 +44,7 @@
     document.body.dataset.tela = id;
     A.esquadrilha(id === "t-espera");
     SONAR.ligar(id === "t-jogo");
+    SOM.cabine(id === "t-jogo");
     const passo = id === "t-intervalo" ? "t-jogo" : id, pi = ORDEM.indexOf(passo);
     $$("#bt-passos li").forEach((li, i) => { li.classList.toggle("atual", i === pi); li.classList.toggle("feito", pi > i); });
     if (id !== "t-jogo") { $("#alerta-borda").classList.remove("on"); }
@@ -93,7 +94,7 @@
     });
   })();
 
-  $("#b-decolar").addEventListener("click", () => { SOM.decolar(); VOZ.falar("bemvindo"); abrirCadastro(); });
+  $("#b-decolar").addEventListener("click", () => { SOM.rasante(); VOZ.falar("bemvindo"); abrirCadastro(); });
   $(".esp-heroi .logo").addEventListener("dblclick", () => {
     const d = document.documentElement;
     if (!document.fullscreenElement && d.requestFullscreen) d.requestFullscreen().catch(() => {});
@@ -326,9 +327,9 @@
       [0, `<span class="bc-tag">ORDEM DE MISSÃO // 2027</span><span class="bc-linha" style="--w:${pil.length}ch">${esc(pil)}</span><span class="bc-linha" style="--w:${zona.length}ch">${esc(zona)}</span>`, "trava"],
       [3400, `<div class="bc-numeros"><div><b data-n="${r.alvos}">0</b><span>ALVOS</span></div><div><b data-n="${r.escolhas}">0</b><span>SKUs PARA TRAVAR</span></div><div><b data-n="${r.fixos}">0</b><span>NA CARGA FIXA</span></div></div>`, "alerta"],
       [6600, `<i class="bc-ico">${A.ico("package")}</i><p class="bc-grande">A carga fixa<br><b>já embarcou</b></p><p class="bc-sub">os SKUs obrigatórios entram sozinhos</p>`, "rasante"],
-      [9300, `<i class="bc-ico">${A.ico("crosshair")}</i><p class="bc-grande">Cada alvo é um<br><b>grupo de escolha</b></p><p class="bc-sub">trave no sonar a quantidade pedida</p>`, "rasante"],
-      [12000, `<i class="bc-ico">${A.ico("trending-up")}</i><p class="bc-grande">Pense em<br><b>incremento</b></p><p class="bc-sub">o que mais vende e mais rende para a loja</p>`, "explosao"],
-      [15400, `<i class="bc-ico" style="background:var(--laranja)">${A.ico("timer")}</i><p class="bc-grande lar">O tempo<br><b>não para</b></p><p class="bc-sub">precisão vale 80% · velocidade vale 20%</p>`, "rasante"]
+      [9300, `<i class="bc-ico">${A.ico("crosshair")}</i><p class="bc-grande">Cada alvo é um<br><b>grupo de escolha</b></p><p class="bc-sub">trave no sonar a quantidade pedida</p>`, "trava"],
+      [12000, `<i class="bc-ico">${A.ico("trending-up")}</i><p class="bc-grande">Pense em<br><b>incremento</b></p><p class="bc-sub">o que mais vende e mais rende para a loja</p>`, "rasante"],
+      [15400, `<i class="bc-ico" style="background:var(--laranja)">${A.ico("timer")}</i><p class="bc-grande lar">O tempo<br><b>não para</b></p><p class="bc-sub">precisão vale 80% · velocidade vale 20%</p>`, "tique"]
     ];
     bT.forEach(clearTimeout); bT = [];
     cenas.forEach(([ms, html, som]) => bT.push(setTimeout(() => {
@@ -353,7 +354,7 @@
     }
     $("#contagem-n").textContent = "GO";
     box.classList.remove("pulso"); void box.offsetWidth; box.classList.add("pulso");
-    SOM.contagem(true); SOM.decolar(); VOZ.falar("decolar");
+    SOM.contagem(true); SOM.rasante(); VOZ.falar("decolar");
     await esperar(900);
     box.classList.remove("on");
   }
@@ -367,6 +368,7 @@
     irPara("t-jogo");
     MUSICA.tocar("acao", { reiniciar: true });
     const filme = CINE.tocar("decolagem", { dur: 5.4, tag: "PISTA 09 // DECOLAGEM" });
+    SOM.decolar();
     await esperar(250);
     await contagem("MISSÃO 1 · IOGURTES");
     await filme;
@@ -416,6 +418,7 @@
     await embarque(m);
     await CINE.tocar("contato", { dur: 3.4, tag: "CAM 02 // CONTATO", mira: true,
       html: `<small>CONTATO NO RADAR</small><h3>${m.alvos.length} alvos avistados</h3><p>${esc(m.titulo)} · trave e dispare</p>`, cor: "#8DC63F" });
+    SOM.cabine(true);
     mostrarAlvo();
     rodar();
   }

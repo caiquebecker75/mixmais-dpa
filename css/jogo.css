@@ -191,7 +191,7 @@ body:not([data-tela="t-espera"]) .hud .mira { display: none; }
 body[data-tela="t-espera"] .barra-topo, body[data-tela="t-jogo"] .barra-topo, body:not([data-tela]) .barra-topo { display: none; }
 .bt-marca { display: flex; align-items: center; gap: .7rem; }
 .logo-mini { display: block; width: 5.6rem; }
-.logo-mini svg { width: 100%; display: block; }
+.logo-mini svg, .logo-mini img { width: 100%; display: block; }
 .bt-marca em { white-space: nowrap; font-style: normal; font-family: var(--fonte-titulo); font-weight: 800; font-size: 1.05rem; letter-spacing: .08em; padding-left: .7rem; border-left: 1px solid var(--linha); }
 .bt-marca em b { color: var(--verde); }
 .bt-passos { flex: 1; display: flex; justify-content: center; list-style: none; margin: 0; padding: 0; }
@@ -210,9 +210,10 @@ body[data-tela="t-espera"] .barra-topo, body[data-tela="t-jogo"] .barra-topo, bo
 #t-espera .slogan { font-size: 1.5rem; }
 .esp-placar { width: min(100%, 36rem); }
 .esp-heroi { width: 100%; }
+.sobre img, .slogan img { display: block; margin: 0 auto; height: 1em; width: auto; }
 .sobre { font-family: var(--fonte-titulo); font-weight: 700; font-size: 1.45rem; letter-spacing: .14em; text-shadow: 0 .15rem .8rem rgba(0, 0, 0, .45); }
 .logo { width: min(86vw, 40rem); margin: .3rem auto 0; filter: drop-shadow(0 .5rem 1.4rem rgba(0, 0, 0, .45)); }
-.logo svg { width: 100%; display: block; }
+.logo svg, .logo img { width: 100%; display: block; }
 .slogan { font-family: var(--fonte-titulo); font-weight: 700; font-size: 1.2rem; letter-spacing: .2em; margin-top: .5rem; text-shadow: 0 .15rem .8rem rgba(0, 0, 0, .5); }
 .esp-acao { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
 .selo-mix { display: inline-flex; align-items: center; gap: .8rem; background: rgba(3, 22, 52, .72); border: 1px solid var(--linha-verde); padding: .35rem 1.1rem; border-radius: 2rem; }
@@ -720,7 +721,7 @@ body[data-tela="t-espera"] .barra-topo, body[data-tela="t-jogo"] .barra-topo, bo
 .vin-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: flash 2.6s forwards; }
 @keyframes flash { 0%, 80% { opacity: 0; } 88% { opacity: .85; } 100% { opacity: 0; } }
 .vin-logo { width: min(80vw, 36rem); animation: logoVin 1.1s cubic-bezier(.2,1.5,.4,1) backwards; filter: drop-shadow(0 0 40px rgba(141,198,63,.35)); }
-.vin-logo svg { width: 100%; display: block; overflow: visible; }
+.vin-logo svg, .vin-logo img { width: 100%; display: block; }
 @keyframes logoVin { from { transform: scale(2.4); opacity: 0; filter: blur(10px); } }
 .vc3 p { font-family: var(--fonte-titulo); font-weight: 800; letter-spacing: .14em; font-size: 2rem; margin: 1.4rem 0 0; animation: sobeTexto .7s 1.2s backwards; }
 .vc4 p { margin: 0; font-family: var(--fonte-titulo); font-weight: 900; text-transform: uppercase; line-height: 1; }
@@ -737,3 +738,9 @@ body[data-tela="t-espera"] .barra-topo, body[data-tela="t-jogo"] .barra-topo, bo
   .bt-passos li { font-size: .82rem; letter-spacing: .06em; }
   .barra-topo { gap: .8rem; }
 }
+
+/* titulos originais do KV (imagem) na espera e na vinheta */
+#t-espera .sobre img { height: 2.2rem; }
+#t-espera .slogan img { height: 1.6rem; margin-top: .9rem; }
+.vc3 p img { height: 2.2rem; display: block; margin: 0 auto; }
+@media (min-aspect-ratio: 1/1) { #t-espera .sobre img { height: 1.8rem; } #t-espera .slogan img { height: 1.3rem; } }

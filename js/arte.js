@@ -4,26 +4,8 @@
 (function () {
   const LARANJA = "#F47B20", VERDE = "#8DC63F";
 
-  /* Logo do KV recriado em vetor: ESQUADRAO / asas / ACELERA / +DPA / divisa com estrela */
-  const asaE = `
-    <polygon points="6,78 196,78 188,90 20,90" fill="#fff"/>
-    <polygon points="36,99 160,99 154,111 48,111" fill="${VERDE}"/>
-    <polygon points="62,120 158,120 152,132 74,132" fill="${VERDE}"/>
-    <polygon points="88,141 156,141 150,153 100,153" fill="${VERDE}"/>`;
-  const LOGO = `
-  <svg viewBox="0 0 640 330" role="img" aria-label="Esquadrão Acelera +DPA" xmlns="http://www.w3.org/2000/svg">
-    <text x="320" y="50" text-anchor="middle" fill="${LARANJA}" font-family="'Saira Condensed',Impact,sans-serif" font-weight="800" font-size="42" letter-spacing="5">ESQUADRÃO</text>
-    <g>${asaE}</g>
-    <g transform="translate(640,0) scale(-1,1)">${asaE}</g>
-    <text x="320" y="160" text-anchor="middle" fill="#fff" font-family="'Saira Condensed',Impact,sans-serif" font-weight="900" font-size="104" textLength="300" lengthAdjust="spacingAndGlyphs">ACELERA</text>
-    <g transform="translate(196,176)">
-      <rect x="24" y="0" width="26" height="74" fill="${VERDE}"/>
-      <rect x="0" y="24" width="74" height="26" fill="${VERDE}"/>
-    </g>
-    <text x="392" y="250" text-anchor="middle" fill="#fff" font-family="'Saira Condensed',Impact,sans-serif" font-weight="900" font-size="104" textLength="200" lengthAdjust="spacingAndGlyphs">DPA</text>
-    <polygon points="232,270 408,270 380,300 320,286 260,300" fill="${LARANJA}"/>
-    <polygon points="320,262 326,276 341,276 329,285 333,299 320,291 307,299 311,285 299,276 314,276" fill="#fff"/>
-  </svg>`;
+  /* Logo ORIGINAL do KV (recortado do proprio arquivo da DPA, sem redesenho) */
+  const LOGO = `<img src="assets/marca/logo.png" alt="Esquadrão Acelera +DPA" draggable="false">`;
 
   /* Jato visto de cima, apontando para cima */
   const JATO = `

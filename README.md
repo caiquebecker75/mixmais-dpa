@@ -16,6 +16,8 @@ Só junta os totens com o Firebase ligado; em modo local mostra apenas as partid
 ## Visual, som e voz
 
 - Interface e cenários em CSS, SVG e canvas (sonar, mapa, HUD). Fotos de produto: packshots oficiais da DPA.
+- Logo: o original do KV, recortado do arquivo enviado pela DPA por `ferramentas/extrair-logo.py` (`assets/marca/logo.png`, `convencao.png`, `slogan.png`). Não redesenhar. Quando chegar o logo em vetor ou PNG de alta, basta trocar esses três arquivos.
+- Som de jato real (`assets/som`): decolagem, duas passagens e o ronco da cabine, tirados do áudio da filmagem "Combined Strike 25 F-16s takeoffs" (domínio público).
 - Vídeos de transição (`assets/video`): trechos reais em domínio público, cortados por `ferramentas/cortar-videos.sh`.
   Fontes: "Atlantic Trident 2017 - Ready to fight" e "Combined Strike 25 F-16s takeoffs (974487)", U.S. Air Force via DVIDS e Wikimedia Commons.
 - `assets/video/vinheta.mp4`: vinheta de abertura de 15 s (projeto HyperFrames em `Projetos/esquadrao-vinheta`).
