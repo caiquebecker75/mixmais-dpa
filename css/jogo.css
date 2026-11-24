@@ -415,7 +415,14 @@ body[data-tela="t-espera"] .barra-topo, body[data-tela="t-jogo"] .barra-topo, bo
 .sonar-canto.bl { bottom: 0; left: 0; } .sonar-canto.br { bottom: 0; right: 0; text-align: right; }
 .sonar-canto small { display: block; font-family: var(--mono); font-size: .56rem; letter-spacing: .16em; color: var(--verde); }
 .sonar-canto b { font-family: var(--mono); font-weight: 400; font-size: 1.15rem; }
-.sonar-selo { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); text-align: center; pointer-events: none; white-space: nowrap; }
+.sonar-selo { position: absolute; left: 50%; top: 9%; transform: translateX(-50%); z-index: 3; text-align: center; pointer-events: none; white-space: nowrap; }
+.selo-caixa { padding: .8rem 1.6rem .9rem; background: rgba(3, 18, 42, .9); border: 1.5px solid var(--c); border-radius: var(--raio); box-shadow: 0 0 2.2rem color-mix(in srgb, var(--c) 55%, transparent); animation: seloEntra .45s cubic-bezier(.2, 1.6, .4, 1); }
+.selo-caixa .estrelas { font-size: 1.5rem; letter-spacing: .25em; color: rgba(255, 255, 255, .22); }
+.selo-caixa .estrelas i { font-style: normal; }
+.selo-caixa .estrelas i.on { color: var(--ouro); text-shadow: 0 0 .8rem rgba(255, 210, 74, .8); }
+.selo-caixa b { animation: none !important; }
+.selo-caixa p { font-size: .9rem; color: #E3ECF8; margin: .15rem 0 .2rem; }
+.selo-caixa em { display: block; font-style: normal; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; background: var(--laranja); padding: .2em .7em; margin-top: .35rem; }
 .sonar-selo b { display: block; font-family: var(--fonte-titulo); font-weight: 900; font-size: 2.6rem; text-transform: uppercase; line-height: 1; letter-spacing: .04em; color: var(--c); text-shadow: 0 0 1.4rem var(--c), 0 .15rem .5rem #000; animation: seloEntra .45s cubic-bezier(.2, 1.6, .4, 1); }
 .sonar-selo span { font-family: var(--mono); font-size: 1.5rem; color: #fff; text-shadow: 0 .1rem .4rem #000; }
 @keyframes seloEntra { from { transform: scale(2.4); opacity: 0; } }

@@ -20,17 +20,6 @@ junta() { # saida partes...
 corta dec1 trident-ready.webm 46.6 2.3
 corta dec2 decolagem-f16.webm 0.25 3.3
 junta decolagem dec1 dec2
-# contato: formacao vista do cockpit + esquadrilha ao longe
-corta con1 trident-ready.webm 49.2 1.9
-corta con2 trident-ready.webm 41.2 2.5
-junta contato con1 con2
-# combates: cortes curtos entre um alvo e outro
-corta c1 trident-ready.webm 5.3 1.9;   cp "$TMP/c1.mp4" "$OUT/combate1.mp4"
-corta c2 trident-ready.webm 26.2 1.9;  cp "$TMP/c2.mp4" "$OUT/combate2.mp4"
-corta c3 trident-ready.webm 32.6 1.5;  cp "$TMP/c3.mp4" "$OUT/combate3.mp4"
-corta c4 trident-ready.webm 38.6 2.2;  cp "$TMP/c4.mp4" "$OUT/combate4.mp4"
-corta c5 trident-ready.webm 51.4 2.2;  cp "$TMP/c5.mp4" "$OUT/combate5.mp4"
-corta c6 trident-ready.webm 65.7 2.1;  cp "$TMP/c6.mp4" "$OUT/combate6.mp4"
 # vitoria: formacao mista
 corta vit trident-ready.webm 82.5 4.2; cp "$TMP/vit.mp4" "$OUT/vitoria.mp4"
 # fundo do briefing e da vinheta: formacao + cockpit em camera lenta

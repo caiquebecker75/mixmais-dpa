@@ -416,8 +416,6 @@
     $("#alvo-nome").textContent = m.titulo; $("#alvo-ordem").innerHTML = "Preparar"; $("#alvo-apoio").textContent = "carga fixa embarcando"; $("#alvo-miras").innerHTML = "";
     SONAR.novosContatos(0);
     await embarque(m);
-    await CINE.tocar("contato", { dur: 3.4, tag: "CAM 02 // CONTATO", mira: true,
-      html: `<small>CONTATO NO RADAR</small><h3>${m.alvos.length} alvos avistados</h3><p>${esc(m.titulo)} · trave e dispare</p>`, cor: "#8DC63F" });
     SOM.cabine(true);
     mostrarAlvo();
     rodar();
@@ -546,19 +544,21 @@
     $$("#opcoes .op.marcado").forEach(b => b.classList.add(av.melhor.includes(b.dataset.e) ? "certo" : "errado"));
     const pip = $(`#radar .pip[data-i="${E.ai}"]`);
     pip.classList.remove("atual"); pip.classList.add(g);
-    $("#sonar-selo").innerHTML = `<b style="--c:${cor}">${av.grau.nome}</b><span>+${M.milhar(pts)}</span>`;
+    const estrelas = [0, 1, 2].map(i => `<i class="${i < av.grau.estrelas ? "on" : ""}">★</i>`).join("");
+    $("#sonar-selo").innerHTML = `<div class="selo-caixa" style="--c:${cor}">
+        <div class="estrelas">${estrelas}</div>
+        <b>${av.grau.nome}</b>
+        <p>${av.grau.sub}</p>
+        <span>+${M.milhar(pts)}</span>
+        ${E.sequencia >= 2 ? `<em>SEQUÊNCIA x${E.sequencia}</em>` : ""}
+      </div>`;
+    if (g === "perfeito") SOM.rasante(0.45);
     ({ perfeito: SOM.perfeito, bom: SOM.bom, raspao: SOM.raspao, erro: SOM.erro })[g]();
     VOZ.falar(E.sequencia >= 3 ? "sequencia" : g);
     if (g === "perfeito" && window.confetti) confetti({ particleCount: 70, spread: 75, startVelocity: 40, origin: { y: .45 }, colors: ["#8DC63F", "#FFFFFF", "#F47B20"], ticks: 130 });
     contar(E.pontos, E.pontos + pts, $("#h-pontos"), 700);
     E.pontos += pts;
-    await esperar(850);
-
-    /* 2) corte de combate com o resultado */
-    const estrelas = [0, 1, 2].map(i => `<i class="${i < av.grau.estrelas ? "on" : ""}">★</i>`).join("");
-    SOM.rasante();
-    await CINE.combate({ dur: 1.75, mira: g !== "erro", cor, tag: "CAM 0" + (3 + (E.ai % 5)) + " // COMBATE",
-      html: `<div class="estrelas">${estrelas}</div><h3>${av.grau.nome}</h3><p>${av.grau.sub}</p><b>+${M.milhar(pts)}</b>${E.sequencia >= 2 ? `<span class="seq">SEQUÊNCIA x${E.sequencia}</span>` : ""}` });
+    await esperar(1750);
 
     if (E.ai < m.alvos.length - 1) { E.ai++; mostrarAlvo(); rodar(); }
     else fimMissao();

@@ -18,7 +18,7 @@ Só junta os totens com o Firebase ligado; em modo local mostra apenas as partid
 - Interface e cenários em CSS, SVG e canvas (sonar, mapa, HUD). Fotos de produto: packshots oficiais da DPA.
 - Logo: o original do KV, recortado do arquivo enviado pela DPA por `ferramentas/extrair-logo.py` (`assets/marca/logo.png`, `convencao.png`, `slogan.png`). Não redesenhar. Quando chegar o logo em vetor ou PNG de alta, basta trocar esses três arquivos.
 - Som de jato real (`assets/som`): decolagem, duas passagens e o ronco da cabine, tirados do áudio da filmagem "Combined Strike 25 F-16s takeoffs" (domínio público).
-- Vídeos de transição (`assets/video`): trechos reais em domínio público, cortados por `ferramentas/cortar-videos.sh`.
+- Vídeos (`assets/video`): decolagem, retorno à base e o fundo do briefing e da vinheta, trechos reais em domínio público cortados por `ferramentas/cortar-videos.sh`. Durante a missão não entra vídeo (os cortes de combate foram retirados a pedido).
   Fontes: "Atlantic Trident 2017 - Ready to fight" e "Combined Strike 25 F-16s takeoffs (974487)", U.S. Air Force via DVIDS e Wikimedia Commons.
 - `assets/video/vinheta.mp4`: vinheta de abertura de 15 s (projeto HyperFrames em `Projetos/esquadrao-vinheta`).
 - Trilha (`assets/musica`): "Heroic Age", "Five Armies" e "Take a Chance", de Kevin MacLeod (incompetech.com), licença Creative Commons Atribuição 4.0. O crédito aparece no fim do jogo e precisa continuar lá.
@@ -36,7 +36,7 @@ Só junta os totens com o Firebase ligado; em modo local mostra apenas as partid
    - a carga fixa (itens FIXOS do canal) embarca sozinha;
    - cada GRUPO DE ESCOLHA da planilha vira um alvo: "trave 2 SKUs", "trave 1 SKU";
    - junto do grupo entram até 2 SKUs que estão fora do sortimento do canal (iscas);
-   - cada opção é um contato (T1, T2...) no sonar; o piloto trava e dispara, os mísseis saem no sonar e um corte de combate mostra o resultado;
+   - cada opção é um contato (T1, T2...) no sonar; o piloto trava e dispara, os mísseis saem no sonar e o resultado aparece ali mesmo (estrelas, pontos e sequência);
    - o anel em volta do sonar é o tempo: ele esvazia, fica vermelho e a tela pulsa quando o bônus está acabando.
 6. **Debrief**: patente, pontos, posição, precisão, venda potencial capturada, ranking do esquadrão e revisão de cada alvo (o que era o ideal).
 

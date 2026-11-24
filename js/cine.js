@@ -1,14 +1,15 @@
 /* ==========================================================================
    ESQUADRAO ACELERA +DPA | cinema: videos de transicao
-   Trechos reais em assets/video (decolagem, contato, combates, vitoria, fundo).
+   Trechos reais em assets/video: decolagem, retorno a base (vitoria) e o fundo
+   do briefing e da vinheta. Durante a missao nao entra video.
    Fontes em dominio publico: ver README. Se o video nao carregar, a cena
    segue so com o texto, sem travar o jogo.
    ========================================================================== */
 (function () {
   const $ = s => document.querySelector(s);
-  const CLIPES = ["decolagem", "contato", "combate1", "combate2", "combate3", "combate4", "combate5", "combate6", "vitoria", "fundo"];
+  const CLIPES = ["decolagem", "vitoria", "fundo"];
   const cache = {};
-  let ultimoCombate = 0, fila = Promise.resolve();
+  let fila = Promise.resolve();
 
   /* baixa os clipes inteiros para a memoria: a troca fica instantanea no totem */
   function precarregar() {
@@ -40,11 +41,6 @@
     }));
     return fila;
   }
-  function combate(opcoes) {
-    let n; do { n = 1 + Math.floor(Math.random() * 6); } while (n === ultimoCombate);
-    ultimoCombate = n;
-    return tocar("combate" + n, opcoes);
-  }
   /* liga um video de fundo em loop num elemento <video> */
   async function fundo(video, nome) {
     const src = await url(nome || "fundo");
@@ -53,6 +49,6 @@
     const p = video.play(); if (p && p.catch) p.catch(() => {});
   }
 
-  window.CINE = { precarregar, tocar, combate, fundo };
+  window.CINE = { precarregar, tocar, fundo };
   window.addEventListener("load", () => setTimeout(precarregar, 600));
 })();
