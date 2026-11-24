@@ -23,7 +23,7 @@ Só junta os totens com o Firebase ligado; em modo local mostra apenas as partid
 - `assets/video/vinheta.mp4`: vinheta de abertura de 15 s (projeto HyperFrames em `Projetos/esquadrao-vinheta`).
 - Trilha (`assets/musica`): "Heroic Age", "Five Armies" e "Take a Chance", de Kevin MacLeod (incompetech.com), licença Creative Commons Atribuição 4.0. O crédito aparece no fim do jogo e precisa continuar lá.
 - Mapa: malha de UFs do IBGE. Ícones: Lucide (ISC). Confete: canvas-confetti (ISC).
-- Voz da torre: precisa ser gravada por uma pessoa em `gravador.html` (21 falas, baixa um zip de WAV). Depois `sh ferramentas/gerar-voz.sh <pasta>` converte para `assets/voz`. Sem os arquivos o jogo roda sem voz.
+- Voz da torre (`assets/voz`): 21 falas com voz neural em português do Brasil (Kokoro, modelo aberto, voz `pm_alex`), geradas por `ferramentas/gerar-voz-neural.sh` e tocadas com filtro de rádio. Para trocar por gravação de locutor, use `gravador.html` e depois `ferramentas/gerar-voz.sh <pasta>`.
 - Efeitos sonoros sintetizados em `js/som.js`. Botão de som no topo.
 
 ## Fluxo
