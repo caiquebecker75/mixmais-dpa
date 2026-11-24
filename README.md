@@ -48,7 +48,7 @@ Sem toque por 90 s no meio do jogo, aparece o alerta e o totem volta para a espe
 - Dentro de cada missão, o alvo vale proporcional à quantidade de SKUs que pede.
 - Nota de cada SKU, em porcentagem (como combinado na reunião de 23/11):
   `70% × importância DPA (sell-in) relativa ao melhor do alvo + 30% × posição da margem real no canal`.
-  SKU fora do sortimento vale metade.
+  A venda é relativa ao mais vendido do grupo de escolha. SKU fora do sortimento vale sempre menos que metade do recomendado mais fraco do alvo, por mais que venda, então nunca entra no gabarito.
 - Nota do alvo: metade pela qualidade do conjunto escolhido (normalizada entre o pior e o melhor conjunto possível) e metade pela fração de SKUs certos. Acertou todos: 100%.
 - Velocidade: bônus cheio até metade do tempo de referência (9 s por alvo + 2 s por SKU), zero em 2,5 vezes.
 - Ranking: pontos e, no empate, menor tempo. Top 5 = zona de premiação (`zonaPremio` e `premio` em `config.js`).

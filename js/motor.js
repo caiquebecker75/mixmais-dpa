@@ -50,14 +50,19 @@
     });
   }
 
-  /* Valor de um SKU dentro do alvo, de 0 a 1 */
+  /* Valor de um SKU dentro do alvo, de 0 a 1.
+     Recomendado (dentro do grupo de escolha): venda relativa ao mais vendido do grupo + margem.
+     Fora do sortimento: sempre vale menos que o recomendado mais fraco, por mais que venda. */
   function valores(alvo) {
-    const maxI = Math.max(...alvo.o.map(o => o.i), 0.0001);
+    const dentro = alvo.o.filter(o => !o.f), fora = alvo.o.filter(o => o.f);
+    const base = dentro.length ? dentro : alvo.o;
+    const maxI = Math.max(...base.map(o => o.i), 0.0001), maxTodos = Math.max(...alvo.o.map(o => o.i), 0.0001);
     const out = {};
-    alvo.o.forEach(o => {
-      let v = CFG.pesos.venda * (o.i / maxI) + CFG.pesos.margem * o.r;
-      if (o.f) v *= CFG.fatorForaDoSortimento;
-      out[o.e] = v;
+    base.forEach(o => { out[o.e] = CFG.pesos.venda * Math.min(1, o.i / maxI) + CFG.pesos.margem * o.r; });
+    const piso = Math.min(...base.map(o => out[o.e]));
+    if (dentro.length) fora.forEach(o => {
+      const proprio = CFG.pesos.venda * (o.i / maxTodos) + CFG.pesos.margem * o.r;
+      out[o.e] = piso * CFG.fatorForaDoSortimento * Math.min(1, proprio);
     });
     return out;
   }
@@ -77,7 +82,8 @@
     const p = acertos === q ? 1 : 0.5 * pv + 0.5 * (acertos / q);
     const iscas = escolhidos.filter(e => (alvo.o.find(o => o.e === e) || {}).f).length;
     /* venda capturada (so importancia DPA) */
-    const imp = e => (alvo.o.find(o => o.e === e) || { i: 0 }).i;
+    /* venda capturada: SKU fora do sortimento conta com o mesmo desconto */
+    const imp = e => { const o = alvo.o.find(x => x.e === e); return o ? o.i * (o.f ? CFG.fatorForaDoSortimento : 1) : 0; };
     const vendaEscolha = escolhidos.reduce((t, e) => t + imp(e), 0);
     const vendaMelhor = melhor.reduce((t, e) => t + imp(e), 0);
     let grau;
