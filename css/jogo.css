@@ -192,7 +192,7 @@ body[data-tela="t-espera"] .barra-topo, body[data-tela="t-jogo"] .barra-topo, bo
 .bt-marca { display: flex; align-items: center; gap: .7rem; }
 .logo-mini { display: block; width: 5.6rem; }
 .logo-mini svg { width: 100%; display: block; }
-.bt-marca em { font-style: normal; font-family: var(--fonte-titulo); font-weight: 800; font-size: 1.05rem; letter-spacing: .08em; padding-left: .7rem; border-left: 1px solid var(--linha); }
+.bt-marca em { white-space: nowrap; font-style: normal; font-family: var(--fonte-titulo); font-weight: 800; font-size: 1.05rem; letter-spacing: .08em; padding-left: .7rem; border-left: 1px solid var(--linha); }
 .bt-marca em b { color: var(--verde); }
 .bt-passos { flex: 1; display: flex; justify-content: center; list-style: none; margin: 0; padding: 0; }
 .bt-passos li { display: flex; align-items: center; gap: .45rem; font-family: var(--fonte-titulo); font-weight: 600; font-size: .9rem; letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .38); }
@@ -731,3 +731,9 @@ body[data-tela="t-espera"] .barra-topo, body[data-tela="t-jogo"] .barra-topo, bo
 .vin-pular { position: absolute; bottom: 4.5vh; left: 0; right: 0; text-align: center; font-family: var(--mono); font-size: .8rem; letter-spacing: .14em; color: rgba(255,255,255,.4); }
 
 .creditos { font-size: .58rem; line-height: 1.5; color: rgba(255, 255, 255, .32); text-align: center; margin-top: 1.2rem; letter-spacing: .02em; }
+
+@media (max-aspect-ratio: 1/1) {
+  .bt-passos li + li::before { width: 1.1rem; margin: 0 .45rem; }
+  .bt-passos li { font-size: .82rem; letter-spacing: .06em; }
+  .barra-topo { gap: .8rem; }
+}
