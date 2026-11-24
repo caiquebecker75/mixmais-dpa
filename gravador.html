@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gravador de voz | Esquadrão Acelera +DPA</title>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Saira:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root { --noite:#031634; --verde:#8DC63F; --laranja:#F47B20; --linha:rgba(124,170,255,.22); --suave:#A9C0E0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: radial-gradient(ellipse at 50% 0, #0D3A82, var(--noite) 60%) fixed; color: #fff; font: 16px/1.45 "Saira", system-ui, sans-serif; padding: 32px 20px 80px; }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { font: 800 40px/1 "Saira Condensed", sans-serif; text-transform: uppercase; margin: 8px 0 6px; }
+  .tag { font: 12px "Share Tech Mono", monospace; letter-spacing: .16em; color: var(--verde); }
+  p.apoio { color: var(--suave); margin: 0 0 22px; max-width: 640px; }
+  .topo { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+  button { font: 700 16px "Saira Condensed", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #fff; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.06); border-radius: 6px; height: 42px; padding: 0 18px; cursor: pointer; }
+  button.pri { background: linear-gradient(180deg, #FF9A4D, var(--laranja) 45%, #D9580D); border: 0; }
+  button:disabled { opacity: .35; cursor: default; }
+  .linha { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 14px; margin-bottom: 8px; border: 1px solid var(--linha); border-radius: 8px; background: rgba(4,20,48,.8); }
+  .linha.ok { border-color: var(--verde); }
+  .linha.gravando { border-color: #E5383B; box-shadow: 0 0 0 3px rgba(229,56,59,.25); }
+  .linha i { font: 14px "Share Tech Mono", monospace; color: var(--suave); font-style: normal; }
+  .linha b { font: 700 22px/1.2 "Saira Condensed", sans-serif; letter-spacing: .02em; display: block; }
+  .linha small { color: var(--suave); font: 12px "Share Tech Mono", monospace; letter-spacing: .08em; }
+  .acoes { display: flex; gap: 8px; }
+  .acoes button { height: 38px; padding: 0 14px; font-size: 14px; }
+  .rec { background: #B8262A; border: 0; }
+  #estado { font: 13px "Share Tech Mono", monospace; color: var(--verde); letter-spacing: .08em; }
+  .dicas { border-left: 3px solid var(--laranja); padding: 4px 0 4px 14px; color: var(--suave); margin: 0 0 22px; font-size: 14.5px; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">ESQUADRÃO ACELERA +DPA // TORRE DE CONTROLE</span>
+  <h1>Gravador de voz</h1>
+  <p class="apoio">Grave as falas da torre com uma voz de verdade. Toque em Gravar, fale a frase e toque em Parar. No fim, baixe o zip e mande para quem cuida do jogo: os arquivos já saem com o nome certo.</p>
+  <p class="dicas">Dicas: lugar silencioso, celular a um palmo da boca, tom firme de piloto ou controlador de voo. Frases curtas e secas funcionam melhor. Pode regravar quantas vezes quiser.</p>
+  <div class="topo">
+    <button class="pri" id="b-zip" disabled>Baixar zip com as gravações</button>
+    <span id="estado">0 de 21 falas gravadas</span>
+  </div>
+  <div id="lista"></div>
+</main>
+<script>
+(function () {
+  const FALAS = [
+    ["bemvindo", "Torre de controle para piloto. Bem-vindo ao Esquadrão Acelera mais DPA."],
+    ["ficha", "Identifique-se, piloto."],
+    ["missao", "Escolha sua zona de operação."],
+    ["briefing", "Atenção ao briefing. Pense em incremento: o que mais vende e mais rende para a loja."],
+    ["tres", "Três."], ["dois", "Dois."], ["um", "Um."], ["decolar", "Decolar!"],
+    ["missao1", "Missão um. Iogurtes."], ["missao2", "Missão dois. Galbani."],
+    ["carga", "Carga fixa embarcada. Primeiro alvo no radar."],
+    ["perfeito", "Alvo abatido!"], ["bom", "No alvo!"], ["raspao", "De raspão."], ["erro", "Alvo perdido."],
+    ["sequencia", "Sequência perfeita!"], ["reserva", "Atenção. Tempo na reserva."],
+    ["cumprida", "Missão cumprida!"], ["pouso", "Pouso confirmado. Confira sua patente."],
+    ["zona", "Você está na zona de premiação!"], ["ocioso", "Piloto, ainda está aí?"]
+  ];
+  const $ = s => document.querySelector(s);
+  const gravacoes = {};
+  let ctx = null, fluxo = null, no = null, fonte = null, pedacos = [], atual = null;
+
+  $("#lista").innerHTML = FALAS.map(([id, txt], i) => `
+    <div class="linha" id="l-${id}">
+      <i>${String(i + 1).padStart(2, "0")}</i>
+      <div><b>${txt}</b><small>${id}.wav</small></div>
+      <div class="acoes"><button class="rec" data-id="${id}">Gravar</button><button class="ouvir" data-id="${id}" disabled>Ouvir</button></div>
+    </div>`).join("");
+
+  async function abrir() {
+    if (ctx) return;
+    fluxo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    fonte = ctx.createMediaStreamSource(fluxo);
+    no = ctx.createScriptProcessor(4096, 1, 1);
+    no.onaudioprocess = e => { if (atual) pedacos.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+    const mudo = ctx.createGain(); mudo.gain.value = 0;
+    fonte.connect(no); no.connect(mudo); mudo.connect(ctx.destination);
+  }
+  function wav(amostras, taxa) {
+    /* corta silencio das pontas e normaliza */
+    let ini = 0, fim = amostras.length - 1, pico = 0;
+    while (ini < fim && Math.abs(amostras[ini]) < .012) ini++;
+    while (fim > ini && Math.abs(amostras[fim]) < .012) fim--;
+    ini = Math.max(0, ini - Math.floor(taxa * .05)); fim = Math.min(amostras.length - 1, fim + Math.floor(taxa * .12));
+    const a = amostras.subarray(ini, fim + 1);
+    for (let i = 0; i < a.length; i++) pico = Math.max(pico, Math.abs(a[i]));
+    const ganho = pico > 0 ? Math.min(6, .92 / pico) : 1;
+    const buf = new ArrayBuffer(44 + a.length * 2), v = new DataView(buf);
+    const esc = (p, s) => { for (let i = 0; i < s.length; i++) v.setUint8(p + i, s.charCodeAt(i)); };
+    esc(0, "RIFF"); v.setUint32(4, 36 + a.length * 2, true); esc(8, "WAVEfmt "); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, taxa, true); v.setUint32(28, taxa * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true); esc(36, "data"); v.setUint32(40, a.length * 2, true);
+    for (let i = 0; i < a.length; i++) { const s = Math.max(-1, Math.min(1, a[i] * ganho)); v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true); }
+    return new Uint8Array(buf);
+  }
+  function estado() {
+    const n = Object.keys(gravacoes).length;
+    $("#estado").textContent = `${n} de ${FALAS.length} falas gravadas`;
+    $("#b-zip").disabled = n === 0;
+  }
+  document.addEventListener("click", async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const id = b.dataset.id;
+    if (b.classList.contains("rec")) {
+      if (atual && atual !== id) return;
+      if (!atual) {
+        try { await abrir(); } catch (err) { alert("Preciso da permissão do microfone para gravar."); return; }
+        if (ctx.state === "suspended") await ctx.resume();
+        pedacos = []; atual = id; b.textContent = "Parar";
+        $("#l-" + id).classList.add("gravando");
+      } else {
+        atual = null; b.textContent = "Regravar";
+        const total = pedacos.reduce((t, p) => t + p.length, 0), tudo = new Float32Array(total);
+        let o = 0; pedacos.forEach(p => { tudo.set(p, o); o += p.length; });
+        gravacoes[id] = wav(tudo, ctx.sampleRate);
+        const l = $("#l-" + id); l.classList.remove("gravando"); l.classList.add("ok");
+        l.querySelector(".ouvir").disabled = false;
+        estado();
+      }
+    } else if (b.classList.contains("ouvir") && gravacoes[id]) {
+      new Audio(URL.createObjectURL(new Blob([gravacoes[id]], { type: "audio/wav" }))).play();
+    }
+  });
+
+  /* zip sem compressao (WAV ja e cru), sem biblioteca */
+  const TAB = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc = d => { let c = 0xFFFFFFFF; for (let i = 0; i < d.length; i++) c = TAB[(c ^ d[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  function zip(arquivos) {
+    const partes = [], central = []; let pos = 0;
+    const enc = new TextEncoder();
+    arquivos.forEach(([nome, dados]) => {
+      const n = enc.encode(nome), c = crc(dados);
+      const h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint32(14, c, true); h.setUint32(18, dados.length, true); h.setUint32(22, dados.length, true); h.setUint16(26, n.length, true);
+      partes.push(new Uint8Array(h.buffer), n, dados);
+      const d = new DataView(new ArrayBuffer(46));
+      d.setUint32(0, 0x02014b50, true); d.setUint16(4, 20, true); d.setUint16(6, 20, true); d.setUint32(16, c, true); d.setUint32(20, dados.length, true); d.setUint32(24, dados.length, true); d.setUint16(28, n.length, true); d.setUint32(42, pos, true);
+      central.push(new Uint8Array(d.buffer), n);
+      pos += 30 + n.length + dados.length;
+    });
+    const tamC = central.reduce((t, p) => t + p.length, 0);
+    const f = new DataView(new ArrayBuffer(22));
+    f.setUint32(0, 0x06054b50, true); f.setUint16(8, arquivos.length, true); f.setUint16(10, arquivos.length, true); f.setUint32(12, tamC, true); f.setUint32(16, pos, true);
+    return new Blob([...partes, ...central, new Uint8Array(f.buffer)], { type: "application/zip" });
+  }
+  $("#b-zip").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(zip(Object.entries(gravacoes).map(([id, d]) => [id + ".wav", d])));
+    a.download = "voz-torre-esquadrao.zip"; a.click();
+  });
+})();
+</script>
+</body>
+</html>

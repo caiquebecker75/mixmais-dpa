@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#031634">
+<title>Esquadrão Acelera +DPA | MIX+ DPA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Saira:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/jogo.css?v=20261124h">
+</head>
+<body class="cena-ceu">
+
+<div id="fundo" aria-hidden="true"></div>
+
+<div class="hud" aria-hidden="true">
+  <span class="hud-rot tl">SYS.CORE // ONLINE</span>
+  <span class="hud-rot tc">Y-AXIS</span>
+  <span class="hud-rot tr">GRID.RES // 40PX</span>
+  <span class="hud-rot bl">COORD // 23.5S 46.6W</span>
+  <span class="hud-rot br">STATUS: SAFE</span>
+  <i class="mira m1"></i><i class="mira m2"></i><i class="mira m3"></i><i class="mira m4"></i>
+</div>
+
+<!-- Barra de etapas (some na espera e no jogo) -->
+<header class="barra-topo" id="barra-topo">
+  <div class="bt-marca"><span class="logo-mini" data-logo></span><em>MIX<b>+</b> DPA</em></div>
+  <ol class="bt-passos" id="bt-passos">
+    <li data-p="t-cadastro"><i>01</i><span>Piloto</span></li>
+    <li data-p="t-missao"><i>02</i><span>Zona</span></li>
+    <li data-p="t-briefing"><i>03</i><span>Briefing</span></li>
+    <li data-p="t-jogo"><i>04</i><span>Missão</span></li>
+    <li data-p="t-debrief"><i>05</i><span>Debrief</span></li>
+  </ol>
+  <button type="button" class="btn-ico b-som" aria-label="Som"></button>
+</header>
+
+<main id="app">
+
+  <!-- 0. ESPERA -->
+  <section class="tela ativa" id="t-espera">
+    <div class="esp-heroi">
+      <p class="sobre">CONVENÇÃO DE VENDAS 2027</p>
+      <div class="logo" data-logo></div>
+      <p class="slogan">POTÊNCIA PARA VOAR MAIS ALTO</p>
+    </div>
+    <div class="esp-acao">
+      <div class="selo-mix"><span>MIX<b>+</b> DPA</span><em>desafio de sortimento</em></div>
+      <p class="chamada">Monte o mix que mais <b>acelera a venda</b> da loja.<br>Precisão e velocidade sobem você no ranking.</p>
+      <button type="button" class="btn-mega" id="b-decolar"><i data-ico="plane"></i><span>Toque para decolar</span></button>
+    </div>
+    <div class="esp-placar painel">
+      <div class="painel-cab"><span class="ponto-vivo"></span><h3>Top <span class="n-zona">5</span> do esquadrão</h3><em id="n-pilotos"></em></div>
+      <ol id="top-espera" class="top-lista"></ol>
+      <p class="premio-linha" id="premio-espera"></p>
+    </div>
+    <footer class="esp-rodape">
+      <span class="lactalis">LACTALIS <b>DPA</b></span>
+      <a href="painel.html" class="link-discreto">painel</a>
+    </footer>
+  </section>
+
+  <!-- 1. FICHA DO PILOTO -->
+  <section class="tela" id="t-cadastro">
+    <div class="cab">
+      <span class="etapa-tag">01 // IDENTIFICAÇÃO</span>
+      <h1>Ficha do piloto</h1>
+      <p>Seus dados entram no ranking do esquadrão.</p>
+    </div>
+    <div class="cad-grade">
+      <form id="form-cadastro" class="painel formulario" novalidate autocomplete="off">
+        <div class="campo largo">
+          <label for="f-nome">Nome e sobrenome</label>
+          <div class="entrada"><i data-ico="user"></i><input id="f-nome" type="text" autocapitalize="words" placeholder="Como você aparece no ranking"></div>
+          <span class="erro" data-erro="f-nome"></span>
+        </div>
+        <div class="campo">
+          <label for="f-email">E-mail</label>
+          <div class="entrada"><i data-ico="mail"></i><input id="f-email" type="email" inputmode="email" autocapitalize="off" placeholder="voce@empresa.com.br"></div>
+          <span class="erro" data-erro="f-email"></span>
+        </div>
+        <div class="campo">
+          <label for="f-telefone">Celular (WhatsApp)</label>
+          <div class="entrada"><i data-ico="phone"></i><input id="f-telefone" type="tel" inputmode="numeric" placeholder="(00) 00000-0000"></div>
+          <span class="erro" data-erro="f-telefone"></span>
+        </div>
+        <div class="campo">
+          <label for="f-empresa">Empresa ou distribuidor</label>
+          <div class="entrada"><i data-ico="building-2"></i><input id="f-empresa" type="text" placeholder="Ex.: Lactalis DPA"></div>
+          <span class="erro" data-erro="f-empresa"></span>
+        </div>
+        <div class="campo">
+          <label for="f-area">Função</label>
+          <div class="entrada"><i data-ico="briefcase"></i>
+            <select id="f-area">
+              <option value="">Escolha</option>
+              <option>Vendedor(a)</option>
+              <option>Supervisor(a) de vendas</option>
+              <option>Gerente de vendas</option>
+              <option>Gerente regional</option>
+              <option>Trade marketing</option>
+              <option>Distribuidor</option>
+              <option>Outra</option>
+            </select>
+          </div>
+          <span class="erro" data-erro="f-area"></span>
+        </div>
+        <div class="campo largo">
+          <span class="rotulo">Codinome de voo</span>
+          <div class="chips" id="f-codinome"></div>
+        </div>
+        <div class="campo largo check">
+          <input type="checkbox" id="f-lgpd">
+          <label for="f-lgpd" id="texto-lgpd"></label>
+          <span class="erro" data-erro="f-lgpd"></span>
+        </div>
+        <div class="acoes-form">
+          <button type="button" class="btn-sec" data-voltar="t-espera">Voltar</button>
+          <button type="submit" class="btn-pri" id="b-cadastro"><span>Entrar no esquadrão</span><i data-ico="chevron-right"></i></button>
+        </div>
+      </form>
+
+      <aside class="cracha" aria-hidden="true">
+        <div class="cracha-fita"></div>
+        <div class="cracha-corpo">
+          <div class="cracha-topo"><span class="logo-mini" data-logo></span><em>CREDENCIAL DE VOO</em></div>
+          <div class="cracha-foto"><i data-ico="user"></i><s></s></div>
+          <b id="c-codinome">FALCÃO</b>
+          <span id="c-nome">Seu nome aqui</span>
+          <small id="c-funcao">Função · Empresa</small>
+          <div class="cracha-pe">
+            <span>PATENTE<b>CADETE</b></span>
+            <span>ESQUADRÃO<b>ACELERA +DPA</b></span>
+          </div>
+          <div class="cracha-barras"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 2. ZONA DE OPERACAO (mapa) -->
+  <section class="tela" id="t-missao">
+    <div class="cab">
+      <span class="etapa-tag">02 // ZONA DE OPERAÇÃO</span>
+      <h1>Escolha a zona de operação</h1>
+      <p>Toque no mapa para definir a regional. Depois escolha o canal da missão.</p>
+    </div>
+    <div class="zona-grade">
+      <div class="mapa-caixa painel">
+        <div class="mapa-topo"><span id="mapa-estado">AGUARDANDO REGIONAL</span><span id="mapa-coord">LAT --.- / LON --.-</span></div>
+        <div class="mapa-area"><svg id="mapa" xmlns="http://www.w3.org/2000/svg"></svg><i class="mapa-varre"></i></div>
+        <div class="mapa-leg"><span class="lg-ssco">SSCO · Sul, Sudeste e Centro-Oeste</span><span class="lg-neno">NENO · Norte e Nordeste</span></div>
+      </div>
+      <div class="zona-lado">
+        <div class="zona-passo" id="zp1">
+          <h3><i>1</i>Regional</h3>
+          <div class="reg-botoes" id="reg-botoes"></div>
+        </div>
+        <div class="zona-passo travado" id="zp2">
+          <h3><i>2</i>Canal da missão</h3>
+          <div class="lista-canais" id="lista-canais"></div>
+        </div>
+        <div class="acoes-linha">
+          <button type="button" class="btn-sec" id="b-sortear" disabled><i data-ico="shuffle"></i><span>Sortear</span></button>
+          <button type="button" class="btn-pri" id="b-missao" disabled><span>Confirmar zona</span><i data-ico="chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. BRIEFING -->
+  <section class="tela" id="t-briefing">
+    <div class="cab">
+      <span class="etapa-tag">03 // BRIEFING</span>
+      <h1>Ordem de missão</h1>
+      <p id="briefing-sub"></p>
+    </div>
+    <div class="brief-grade">
+      <div class="painel brief-ordem">
+        <div class="painel-cab"><i data-ico="radar"></i><h3>Sua missão</h3></div>
+        <dl id="brief-dados"></dl>
+        <div class="brief-peso">
+          <div><span>Precisão das escolhas</span><b>80%</b><i><s style="width:80%"></s></i></div>
+          <div><span>Velocidade</span><b>20%</b><i><s style="width:20%" class="lar"></s></i></div>
+        </div>
+      </div>
+      <ol class="brief-regras">
+        <li><i data-ico="package"></i><div><h3>A carga fixa já embarcou</h3><p>Os SKUs obrigatórios do canal entram sozinhos. Você não mexe neles.</p></div></li>
+        <li><i data-ico="crosshair"></i><div><h3>Cada alvo é um grupo de escolha</h3><p>Trave no sonar a quantidade pedida. Alguns contatos são SKUs fora do sortimento.</p></div></li>
+        <li class="destaque"><i data-ico="trending-up"></i><div><h3>Pense em incremento</h3><p>Escolha o que mais vende e mais rende para a loja, como se tudo estivesse disponível.</p></div></li>
+        <li><i data-ico="timer"></i><div><h3>O anel do tempo não para</h3><p>Quanto mais anel sobrar no fim, maior o bônus de velocidade.</p></div></li>
+      </ol>
+    </div>
+    <div class="acoes-linha">
+      <button type="button" class="btn-sec" data-voltar="t-missao">Trocar zona</button>
+      <button type="button" class="btn-pri grande pulsa" id="b-iniciar"><i data-ico="plane"></i><span>Decolar</span></button>
+    </div>
+  </section>
+
+  <!-- 4. JOGO -->
+  <section class="tela" id="t-jogo">
+    <header class="hud-topo">
+      <div class="hud-bloco"><small>PILOTO</small><b id="h-piloto">-</b></div>
+      <div class="hud-bloco"><small id="h-missao-n">MISSÃO 1/2</small><b id="h-missao">Iogurtes</b></div>
+      <div class="hud-bloco tempo" id="h-bloco-tempo"><small>TEMPO DE VOO</small><b id="h-tempo">00:00</b></div>
+      <div class="hud-bloco pontos"><small>PONTOS</small><b id="h-pontos">0</b></div>
+      <button type="button" class="btn-ico b-som" aria-label="Som"></button>
+    </header>
+
+    <div class="jogo-grade">
+      <div class="sonar-caixa">
+        <canvas id="sonar"></canvas>
+        <div class="sonar-centro" id="sonar-centro"><b id="s-tempo">00:00</b><small id="s-bonus">BÔNUS CHEIO</small></div>
+        <div class="sonar-canto tl"><small>ALVO</small><b id="alvo-num">01/15</b></div>
+        <div class="sonar-canto tr"><small>CARGA FIXA</small><b id="h-fixos">0</b></div>
+        <div class="sonar-canto bl"><small>TRAVADOS</small><b id="h-travados">0</b></div>
+        <div class="sonar-canto br"><small>SEQUÊNCIA</small><b id="h-seq">0</b></div>
+        <div class="sonar-selo" id="sonar-selo"></div>
+      </div>
+
+      <div class="ordem" id="ordem">
+        <span class="ordem-grupo" id="alvo-nome">-</span>
+        <h2 id="alvo-ordem">Trave <b>2 SKUs</b></h2>
+        <p id="alvo-apoio">os que mais incrementam a loja</p>
+        <div class="alvo-miras" id="alvo-miras"></div>
+      </div>
+
+      <div class="opcoes" id="opcoes"></div>
+
+      <footer class="barra-disparo">
+        <div class="radar" id="radar"></div>
+        <button type="button" class="btn-disparar" id="b-disparar" disabled><i data-ico="crosshair"></i><span>Disparar</span></button>
+      </footer>
+    </div>
+
+    <div class="embarque" id="embarque"></div>
+  </section>
+
+  <!-- 5. INTERVALO -->
+  <section class="tela" id="t-intervalo">
+    <div class="intervalo-caixa painel">
+      <span class="etapa-tag" id="int-tag">MISSÃO 1 // CONCLUÍDA</span>
+      <h1 id="int-titulo">Missão cumprida</h1>
+      <div class="int-numeros" id="int-numeros"></div>
+      <div class="int-prox" id="int-prox"></div>
+      <button type="button" class="btn-pri grande pulsa" id="b-continuar"><span>Próxima missão</span><i data-ico="chevron-right"></i></button>
+      <p class="auto" id="int-auto"></p>
+    </div>
+  </section>
+
+  <!-- 6. DEBRIEF -->
+  <section class="tela" id="t-debrief">
+    <div class="deb-grade">
+      <div class="deb-placa painel">
+        <span class="etapa-tag">05 // DEBRIEF</span>
+        <div class="insignia" id="r-insignia"></div>
+        <p class="r-patente" id="r-patente"></p>
+        <p class="r-nome" id="r-nome"></p>
+        <div class="r-pontos"><b id="r-pontos">0</b><span>pontos</span></div>
+        <div class="r-posicao" id="r-posicao"></div>
+        <div class="r-kpis" id="r-kpis"></div>
+        <button type="button" class="btn-pri grande" id="b-nova"><i data-ico="rotate-ccw"></i><span>Próximo piloto</span></button>
+        <p class="auto" id="r-auto"></p>
+      </div>
+      <div class="deb-lado painel">
+        <div class="abas" role="tablist">
+          <button type="button" class="aba ativa" data-aba="ab-ranking"><i data-ico="trophy"></i>Ranking do esquadrão</button>
+          <button type="button" class="aba" data-aba="ab-revisao"><i data-ico="crosshair"></i>Revisar meus alvos</button>
+        </div>
+        <div class="aba-corpo ativa" id="ab-ranking">
+          <div class="podio" id="r-podio"></div>
+          <ol class="ranking-lista" id="r-ranking"></ol>
+          <p class="premio-linha" id="premio-debrief"></p>
+        </div>
+        <div class="aba-corpo" id="ab-revisao">
+          <p class="revisao-legenda"><span><i class="lg ok"></i>escolha certa</span><span><i class="lg x"></i>escolha fora do ideal</span><span><i class="lg ideal"></i>ideal que ficou de fora</span></p>
+          <div id="r-revisao"></div>
+        </div>
+        <p class="creditos">Imagens aéreas: U.S. Air Force e Armée de l'Air via DVIDS e Wikimedia Commons (domínio público) · Música: Kevin MacLeod, incompetech.com (CC BY 4.0) · Mapa: IBGE · Ícones: Lucide</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Cinema: videos de transicao e resultado do disparo -->
+<div class="cine" id="cine" aria-hidden="true">
+  <video id="cine-video" muted playsinline preload="auto"></video>
+  <div class="cine-veu"></div>
+  <div class="cine-hud"><span class="tl">REC ●</span><span class="tr" id="cine-tag">CAM 01</span><i class="cine-mira"></i></div>
+  <div class="cine-texto" id="cine-texto"></div>
+  <div class="cine-barra t"></div><div class="cine-barra b"></div>
+</div>
+
+<!-- Briefing cinematografico -->
+<div class="bcine" id="bcine" aria-hidden="true">
+  <video id="bcine-video" muted playsinline loop preload="auto"></video>
+  <div class="bcine-veu"></div>
+  <div class="bcine-cena" id="bcine-cena"></div>
+  <div class="cine-barra t"></div><div class="cine-barra b"></div>
+  <button type="button" class="bcine-pular" id="bcine-pular">pular</button>
+</div>
+
+<!-- Vinheta de abertura -->
+<div class="vinheta" id="vinheta" aria-hidden="true">
+  <video id="vin-video" muted playsinline loop preload="auto"></video>
+  <div class="vin-grade"></div>
+  <div class="vin-cena vc1"><span class="vin-tipo">SYS.CORE // ONLINE</span><h2>Convenção de Vendas <b>2027</b></h2><span class="vin-tipo t2">ESQUADRÃO EM FORMAÇÃO</span></div>
+  <div class="vin-cena vc2"><span class="vin-jato"></span><i class="vin-rastro"></i><i class="vin-flash"></i></div>
+  <div class="vin-cena vc3"><div class="vin-logo"></div><p>POTÊNCIA PARA VOAR MAIS ALTO</p></div>
+  <div class="vin-cena vc4"><p class="l1">Monte o mix que</p><p class="l2">mais <b>acelera</b> a venda</p><p class="l3">Toque para decolar</p></div>
+  <span class="vin-pular">toque para pular</span>
+</div>
+
+<!-- Contagem regressiva -->
+<div class="contagem" id="contagem" aria-hidden="true"><b id="contagem-n">3</b><span id="contagem-t">PREPARAR</span></div>
+
+<!-- Alerta de tempo: borda vermelha pulsando -->
+<div class="alerta-borda" id="alerta-borda" aria-hidden="true"></div>
+
+<div class="modal" id="ocioso" hidden>
+  <div class="painel modal-caixa">
+    <span class="etapa-tag">ALERTA // SEM SINAL</span>
+    <h2>Ainda está aí, piloto?</h2>
+    <p>Voltando para a base em <b id="ocioso-n">10</b> segundos.</p>
+    <button type="button" class="btn-pri" id="b-ocioso"><span>Continuar missão</span></button>
+  </div>
+</div>
+
+<div class="aviso" id="aviso" role="status"></div>
+<div class="transicao" id="transicao" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+<script src="config.js?v=20261124h"></script>
+<script src="js/base.js?v=20261124h"></script>
+<script src="js/mapa.js?v=20261124h"></script>
+<script src="js/store.js?v=20261124h"></script>
+<script src="js/motor.js?v=20261124h"></script>
+<script src="js/som.js?v=20261124h"></script>
+<script src="js/arte.js?v=20261124h"></script>
+<script src="js/vendor/confetti.min.js"></script>
+<script src="js/musica.js?v=20261124h"></script>
+<script src="js/voz.js?v=20261124h"></script>
+<script src="js/sonar.js?v=20261124h"></script>
+<script src="js/cine.js?v=20261124h"></script>
+<script src="js/app.js?v=20261124h"></script>
+</body>
+</html>
